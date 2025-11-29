@@ -5,45 +5,50 @@ A modern, full-stack authentication system built with React and Node.js, featuri
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js (v14 or higher)
 - npm or yarn
 
 ### Installation & Running
 
 1. **Install dependencies for both frontend and backend:**
+
    ```powershell
    # Install backend dependencies
    cd backend
    npm install
-   
+
    # Install frontend dependencies
    cd ../frontend
    npm install
    ```
 
 2. **Start the application:**
-   
+
    **Option A: Start both servers at once (Recommended)**
+
    ```powershell
    # From project root
    .\start-all.ps1
    ```
-   
+
    **Option B: Start servers separately**
+
    ```powershell
    # Terminal 1 - Start backend
    .\start-backend.ps1
-   
+
    # Terminal 2 - Start frontend
    .\start-frontend.ps1
    ```
-   
+
    **Option C: Manual start**
+
    ```powershell
    # Terminal 1 - Backend
    cd backend
    npm start
-   
+
    # Terminal 2 - Frontend
    cd frontend
    npm start
@@ -57,6 +62,7 @@ A modern, full-stack authentication system built with React and Node.js, featuri
 ### Testing the Connection
 
 Before starting the frontend, you can test if the backend is working:
+
 ```powershell
 cd backend
 node test-connection.js
@@ -65,6 +71,7 @@ node test-connection.js
 ## 🚀 Features
 
 ### Frontend
+
 - **Modern React UI** with JSX and SCSS
 - **Responsive Design** that works on all devices
 - **Accessibility-First** approach with ARIA labels and semantic HTML
@@ -75,6 +82,7 @@ node test-connection.js
 - **Error Handling** with user-friendly messages
 
 ### Backend
+
 - **RESTful API** built with Express.js
 - **JWT Authentication** for secure token-based auth
 - **User Registration** with duplicate email detection
@@ -86,6 +94,7 @@ node test-connection.js
 - **Error Handling** with centralized middleware
 
 ### Architecture
+
 - **Clear Separation** between frontend and backend
 - **Modular Design** with controllers, services, and middleware
 - **Extensible Structure** ready for MFA implementation
@@ -133,27 +142,32 @@ TP1/
 ## 🛠️ Installation
 
 ### Prerequisites
+
 - Node.js (v14 or higher)
 - npm or yarn
 
 ### Backend Setup
 
 1. Navigate to the backend folder:
+
 ```powershell
 cd backend
 ```
 
 2. Install dependencies:
+
 ```powershell
 npm install
 ```
 
 3. Create a `.env` file by copying `.env.example`:
+
 ```powershell
 copy .env.example .env
 ```
 
 4. Update the `.env` file with your configuration:
+
 ```env
 PORT=5000
 JWT_SECRET=your_secure_secret_key_here
@@ -161,6 +175,7 @@ FRONTEND_URL=http://localhost:3000
 ```
 
 5. Start the development server:
+
 ```powershell
 npm run dev
 ```
@@ -170,16 +185,19 @@ The backend API will be available at `http://localhost:5000`
 ### Frontend Setup
 
 1. Navigate to the frontend folder:
+
 ```powershell
 cd frontend
 ```
 
 2. Install dependencies:
+
 ```powershell
 npm install
 ```
 
 3. Start the development server:
+
 ```powershell
 npm start
 ```
@@ -191,10 +209,12 @@ The frontend will be available at `http://localhost:3000`
 Use these credentials to test the login functionality:
 
 **Admin User:**
+
 - Email: `admin@ecommerce.com`
 - Password: `Admin@123`
 
 **Regular User:**
+
 - Email: `user@example.com`
 - Password: `User@123`
 
@@ -203,9 +223,11 @@ Use these credentials to test the login functionality:
 ### Authentication Routes
 
 #### POST `/api/auth/signup`
+
 Register a new user account.
 
 **Request Body:**
+
 ```json
 {
   "name": "John Doe",
@@ -215,6 +237,7 @@ Register a new user account.
 ```
 
 **Success Response (201):**
+
 ```json
 {
   "success": true,
@@ -231,9 +254,11 @@ Register a new user account.
 ```
 
 #### POST `/api/auth/login`
+
 Login with email and password.
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -242,6 +267,7 @@ Login with email and password.
 ```
 
 **Success Response:**
+
 ```json
 {
   "success": true,
@@ -257,15 +283,19 @@ Login with email and password.
 ```
 
 #### POST `/api/auth/verify-otp`
+
 Verify OTP for multi-factor authentication (Coming Soon).
 
 #### POST `/api/auth/resend-otp`
+
 Resend OTP code (Coming Soon).
 
 #### POST `/api/auth/logout`
+
 Logout user.
 
 #### GET `/api/health`
+
 Health check endpoint.
 
 ## 🔒 Security Features
@@ -296,22 +326,26 @@ Health check endpoint.
 The system is designed to be extensible. Planned features include:
 
 1. **Multi-Factor Authentication (MFA)**
+
    - Email-based OTP verification
    - SMS-based OTP (optional)
    - TOTP authenticator app support
 
 2. **Password Management**
+
    - Password reset functionality
    - Change password feature
    - Password strength requirements
    - Password visibility toggle
 
 3. **User Registration** ✅ COMPLETED
+
    - Sign-up form ✅
    - Email verification (planned)
    - Profile management (planned)
 
 4. **Session Management**
+
    - Token refresh mechanism
    - Session timeout
    - Device management
@@ -336,7 +370,7 @@ The system is designed to be extensible. Planned features include:
 1. Click "Sign up" at the bottom of the login page
 2. Fill in the registration form:
    - Name: Test User
-   - Email: test@example.com  
+   - Email: test@example.com
    - Password: TestPass123
    - Confirm Password: TestPass123
 3. Watch the password strength indicator update
@@ -365,6 +399,7 @@ curl -X POST http://localhost:5000/api/auth/login `
 ## 🤝 Contributing
 
 This is a learning project for security and authentication best practices. Feel free to:
+
 - Report issues
 - Suggest improvements
 - Submit pull requests
@@ -376,18 +411,21 @@ This project is created for educational purposes.
 ## 👨‍💻 Developer Notes
 
 ### Code Quality
+
 - Follow ES6+ standards
 - Use meaningful variable names
 - Comment complex logic
 - Keep functions small and focused
 
 ### Security Considerations
+
 - Never commit `.env` files
 - Regularly update dependencies
 - Use environment variables for secrets
 - Implement proper error handling
 
 ### Performance
+
 - Optimize bundle size
 - Use React best practices
 - Implement lazy loading when needed
@@ -398,6 +436,7 @@ This project is created for educational purposes.
 ### Frontend Can't Connect to Backend
 
 **Symptoms:**
+
 - Error message: "Cannot connect to server"
 - Network errors in browser console
 - "ERR_CONNECTION_REFUSED" errors
@@ -405,25 +444,30 @@ This project is created for educational purposes.
 **Solutions:**
 
 1. **Verify backend is running:**
+
    ```powershell
    # Test backend health
    curl.exe http://127.0.0.1:5000/api/health
    # OR
    Invoke-RestMethod -Uri "http://127.0.0.1:5000/api/health"
    ```
+
    Expected response: `{"status":"OK","message":"Server is running"}`
 
 2. **Check if port 5000 is in use:**
+
    ```powershell
    netstat -ano | findstr :5000
    ```
+
    If nothing shows, the backend isn't running.
 
 3. **Restart both servers:**
+
    ```powershell
    # Kill any running Node processes
    Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
-   
+
    # Start fresh
    .\start-all.ps1
    ```
@@ -438,10 +482,12 @@ This project is created for educational purposes.
 ### CORS Errors
 
 **Symptoms:**
+
 - "CORS policy" errors in browser console
 - "Access to fetch blocked" messages
 
 **Solutions:**
+
 1. Verify the backend CORS configuration includes your frontend URL
 2. Make sure you're accessing frontend at `http://localhost:3000` (not 127.0.0.1)
 3. Clear browser cache and restart both servers
@@ -449,10 +495,12 @@ This project is created for educational purposes.
 ### Port Already in Use
 
 **Symptoms:**
+
 - Error: "Port 5000 is already in use"
 - Error: "EADDRINUSE"
 
 **Solutions:**
+
 ```powershell
 # Find what's using the port
 netstat -ano | findstr :5000
@@ -467,6 +515,7 @@ Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
 ### Dependencies Not Installing
 
 **Solutions:**
+
 ```powershell
 # Clear npm cache
 npm cache clean --force
@@ -479,6 +528,7 @@ npm install
 ### Backend Starts Then Immediately Stops
 
 **Solutions:**
+
 1. Check for syntax errors in the code
 2. Verify `.env` file is properly formatted
 3. Check the terminal output for error messages
@@ -491,6 +541,7 @@ npm install
 ### Email OTP Not Sending
 
 **Solutions:**
+
 1. Check `backend/.env` has valid email credentials
 2. Verify EMAIL_USER and EMAIL_PASS are set correctly
 3. For Gmail, make sure you're using an "App Password", not your regular password
