@@ -3,6 +3,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 20px;
+}
+
+/* Apply the purple gradient only when admin is NOT active. */
+.app:not(.admin-active) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Ensure admin view has a neutral background (defeat other gradients if needed). */
+.app.admin-active {
+  background: #f7f7fb !important;
 }

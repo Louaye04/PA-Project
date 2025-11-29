@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="g" x1="0%" x2="100%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#6a5af9"/>
+      <stop offset="50%" stop-color="#9b5cf6"/>
+      <stop offset="100%" stop-color="#c26bff"/>
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#g)"/>
+  <!-- subtle icons -->
+  <g fill="rgba(255,255,255,0.06)" transform="translate(60,60)">
+    <rect x="0" y="0" width="120" height="120" rx="18"/>
+    <g transform="translate(120,80)" opacity="0.6">
+      <path d="M20 10 L30 10 L30 40 L10 40 L10 10 Z" />
+    </g>
+  </g>
+  <!-- confetti dots -->
+  <g fill="#ffd79a" opacity="0.9">
+    <circle cx="200" cy="180" r="6"/>
+    <circle cx="350" cy="120" r="5"/>
+    <circle cx="480" cy="220" r="4"/>
+    <circle cx="1200" cy="140" r="5"/>
+    <circle cx="1400" cy="300" r="4"/>
+  </g>
+  <!-- center text area left blank; UI will draw a white card on top -->
+</svg>

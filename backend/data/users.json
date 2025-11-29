@@ -1,0 +1,82 @@
+[
+  {
+    "id": 1,
+    "email": "hindkahla09@gmail.com",
+    "password": "$2a$10$oOHqYQAHLbV9Gte8sF25CeAAEpUnS9MLm7YN1tggmWt6lHbctQeOa",
+    "name": "Kahla Hind",
+    "role": "buyer",
+    "mfaEnabled": true,
+    "totpSecret": "IRIG2LRQMYSSI2B4H5JEGT2LNFXUULD2",
+    "totpProvisioningUri": "otpauth://totp/BKH%20Shop%20(hindkahla09%40gmail.com)?secret=IRIG2LRQMYSSI2B4H5JEGT2LNFXUULD2",
+    "birthCity": "Alger",
+    "createdAt": "2025-11-18T22:55:58.596Z"
+  },
+  {
+    "id": 2,
+    "email": "hindkahla271@gmail.com",
+    "password": "$2a$10$x0LEh2ovC7d.yevOnzOSA.zCAnw9hA8cqt.IQPCFmDRovPHE4ebtu",
+    "name": "Kahla Hind",
+    "role": "seller",
+    "mfaEnabled": true,
+    "totpSecret": "GEZSUQRROMUW2YLTGM5FUTCLOAWHILT3",
+    "totpProvisioningUri": "otpauth://totp/BKH%20Shop%20(hindkahla271%40gmail.com)?secret=GEZSUQRROMUW2YLTGM5FUTCLOAWHILT3",
+    "birthCity": "Alger",
+    "createdAt": "2025-11-19T00:26:26.754Z"
+  },
+  {
+    "id": 3,
+    "email": "hindkahla49@gmail.com",
+    "password": "$2a$10$mYXfNbVQ4oMucIjyc2HTd.qCNdh6U57dhuzmFrhwVbabDYmCc0IV6",
+    "name": "Kahla Hind",
+    "role": "buyer",
+    "mfaEnabled": true,
+    "totpSecret": "JETHCOSDFFTHUNLGGJBUIYSPEFJCGOSR",
+    "totpProvisioningUri": "otpauth://totp/BKH%20Shop%20(hindkahla49%40gmail.com)?secret=JETHCOSDFFTHUNLGGJBUIYSPEFJCGOSR",
+    "birthCity": "Alger",
+    "createdAt": "2025-11-19T01:09:08.610Z"
+  },
+  {
+    "id": 4,
+    "email": "hindkahla413@gmail.com",
+    "password": "$2a$10$qUvDhvs0RckGcQHGLhZ8Zu/aeJvK5DKA7VO/E.hiYSNhBCEQDL4LO",
+    "name": "admin_413",
+    "role": "admin",
+    "mfaEnabled": true,
+    "totpSecret": "H5AW26BDPJTDU4JJOJFDYQ3SHZJW4JTN",
+    "totpProvisioningUri": "otpauth://totp/BKH%20Shop%20(hindkahla413%40gmail.com)?secret=H5AW26BDPJTDU4JJOJFDYQ3SHZJW4JTN",
+    "birthCity": "Alger",
+    "createdAt": "2025-11-19T01:20:58.997Z"
+  },
+  {
+    "id": 5,
+    "email": "hindkahla663@gmail.com",
+    "password": "$2a$10$Cbir5oTVZoA0OJT8YbTYxO40PhGCY1lhLxNbGAUxoO1URbfjKMw/6",
+    "name": "admin_663",
+    "role": "admin",
+    "mfaEnabled": true,
+    "totpSecret": "PE3DOKLRLZGHEYS3GRTU6MK5EZ3D6JK3",
+    "totpProvisioningUri": "otpauth://totp/BKH%20Shop%20(hindkahla663%40gmail.com)?secret=PE3DOKLRLZGHEYS3GRTU6MK5EZ3D6JK3",
+    "birthCity": "Alger",
+    "createdAt": "2025-11-19T01:20:59.064Z"
+  },
+  {
+    "id": 6,
+    "email": "hindkahla29@gmail.com",
+    "password": "$2a$10$1rAw1qXqv9NBDEQRkoQt1eW58jeDOQ9wjDdAVLU.WY.S2W7NbExxi",
+    "name": "admin_29",
+    "role": "admin",
+    "mfaEnabled": true,
+    "totpSecret": "KEYGOXTVPBXUEVTDIRDFQZKLOMXT6VSC",
+    "totpProvisioningUri": "otpauth://totp/BKH%20Shop%20(hindkahla29%40gmail.com)?secret=KEYGOXTVPBXUEVTDIRDFQZKLOMXT6VSC",
+    "birthCity": "Alger",
+    "createdAt": "2025-11-19T01:20:59.128Z"
+  },
+  {
+    "id": 7,
+    "email": "babaamerabdenour44@gmail.com",
+    "password": "$2a$10$VWqf78MOF.1XDK8zmoa0FOSv7Qy82aXjreHUMt6VYR5X3roYm/B4y",
+    "name": "Abdennour BABAAMER",
+    "role": "seller",
+    "createdAt": "2025-11-29T20:21:10.887Z"
+  }
+]

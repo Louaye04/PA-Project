@@ -2,6 +2,66 @@
 
 A modern, full-stack authentication system built with React and Node.js, featuring a beautiful UI and robust security practices.
 
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js (v14 or higher)
+- npm or yarn
+
+### Installation & Running
+
+1. **Install dependencies for both frontend and backend:**
+   ```powershell
+   # Install backend dependencies
+   cd backend
+   npm install
+   
+   # Install frontend dependencies
+   cd ../frontend
+   npm install
+   ```
+
+2. **Start the application:**
+   
+   **Option A: Start both servers at once (Recommended)**
+   ```powershell
+   # From project root
+   .\start-all.ps1
+   ```
+   
+   **Option B: Start servers separately**
+   ```powershell
+   # Terminal 1 - Start backend
+   .\start-backend.ps1
+   
+   # Terminal 2 - Start frontend
+   .\start-frontend.ps1
+   ```
+   
+   **Option C: Manual start**
+   ```powershell
+   # Terminal 1 - Backend
+   cd backend
+   npm start
+   
+   # Terminal 2 - Frontend
+   cd frontend
+   npm start
+   ```
+
+3. **Access the application:**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:5000
+   - Health Check: http://localhost:5000/api/health
+
+### Testing the Connection
+
+Before starting the frontend, you can test if the backend is working:
+```powershell
+cd backend
+node test-connection.js
+```
+
 ## 🚀 Features
 
 ### Frontend
@@ -332,6 +392,109 @@ This project is created for educational purposes.
 - Use React best practices
 - Implement lazy loading when needed
 - Monitor API response times
+
+## 🔧 Troubleshooting
+
+### Frontend Can't Connect to Backend
+
+**Symptoms:**
+- Error message: "Cannot connect to server"
+- Network errors in browser console
+- "ERR_CONNECTION_REFUSED" errors
+
+**Solutions:**
+
+1. **Verify backend is running:**
+   ```powershell
+   # Test backend health
+   curl.exe http://127.0.0.1:5000/api/health
+   # OR
+   Invoke-RestMethod -Uri "http://127.0.0.1:5000/api/health"
+   ```
+   Expected response: `{"status":"OK","message":"Server is running"}`
+
+2. **Check if port 5000 is in use:**
+   ```powershell
+   netstat -ano | findstr :5000
+   ```
+   If nothing shows, the backend isn't running.
+
+3. **Restart both servers:**
+   ```powershell
+   # Kill any running Node processes
+   Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
+   
+   # Start fresh
+   .\start-all.ps1
+   ```
+
+4. **Check firewall:**
+   Make sure Windows Firewall isn't blocking Node.js on port 5000.
+
+5. **Verify environment variables:**
+   - Backend: Check `backend/.env` exists and has correct values
+   - Frontend: Check `frontend/.env` has `REACT_APP_API_URL=http://127.0.0.1:5000`
+
+### CORS Errors
+
+**Symptoms:**
+- "CORS policy" errors in browser console
+- "Access to fetch blocked" messages
+
+**Solutions:**
+1. Verify the backend CORS configuration includes your frontend URL
+2. Make sure you're accessing frontend at `http://localhost:3000` (not 127.0.0.1)
+3. Clear browser cache and restart both servers
+
+### Port Already in Use
+
+**Symptoms:**
+- Error: "Port 5000 is already in use"
+- Error: "EADDRINUSE"
+
+**Solutions:**
+```powershell
+# Find what's using the port
+netstat -ano | findstr :5000
+
+# Kill the process (replace PID with the actual process ID)
+taskkill /PID <PID> /F
+
+# Or kill all Node processes
+Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
+```
+
+### Dependencies Not Installing
+
+**Solutions:**
+```powershell
+# Clear npm cache
+npm cache clean --force
+
+# Delete node_modules and reinstall
+Remove-Item -Recurse -Force node_modules
+npm install
+```
+
+### Backend Starts Then Immediately Stops
+
+**Solutions:**
+1. Check for syntax errors in the code
+2. Verify `.env` file is properly formatted
+3. Check the terminal output for error messages
+4. Run test connection:
+   ```powershell
+   cd backend
+   node test-connection.js
+   ```
+
+### Email OTP Not Sending
+
+**Solutions:**
+1. Check `backend/.env` has valid email credentials
+2. Verify EMAIL_USER and EMAIL_PASS are set correctly
+3. For Gmail, make sure you're using an "App Password", not your regular password
+4. Check email service is not blocking the connection
 
 ---
 

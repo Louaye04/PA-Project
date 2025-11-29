@@ -1,16 +1,496 @@
-@import '../../styles/global.scss';
+@import "../../styles/global.scss";
+
+/* Simple, balanced SCSS for Login + Welcome UI */
 
 .login-container {
+  /* Full-bleed background container (image applied inline from component when available) */
   width: 100%;
-  max-width: 450px;
-  animation: fadeInUp 0.6s ease-out;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
 
-  @media (max-width: 640px) {
-    max-width: 100%;
+.login-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
+  padding: 32px;
+  width: min(760px, 92%);
+  box-sizing: border-box;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+.logo-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+.logo-icon {
+  width: 64px;
+  height: 64px;
+  display: block;
+}
+.login-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 4px 0;
+}
+.login-subtitle {
+  color: #6b7280;
+  margin: 0;
+}
+
+.message-banner {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.message-banner.success {
+  background: #ecfdf5;
+  color: #065f46;
+}
+.message-banner.error {
+  background: #fff1f2;
+  color: #991b1b;
+}
+.message-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.login-form {
+  margin-top: 8px;
+}
+.form-group {
+  margin-bottom: 14px;
+}
+.form-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.input-wrapper {
+  position: relative;
+}
+.input-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  color: #9ca3af;
+}
+.form-input {
+  width: 100%;
+  padding: 10px 12px 10px 40px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+.form-input.error {
+  border-color: #f87171;
+}
+.error-message {
+  color: #b91c1c;
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 12px 0;
+}
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.checkbox-input {
+  width: 16px;
+  height: 16px;
+}
+.checkbox-label {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* Role selection styles - commented out since role selection was removed from login
+.role-group .role-options { display:flex; gap:12px; align-items:center; margin-top:8px; }
+.role-option { display:flex; align-items:center; gap:8px; font-weight:700; color:#0f172a; }
+.role-option input { width:16px; height:16px; }
+*/
+
+.submit-button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #6d28d9, #ec4899);
+  color: #fff;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+}
+.submit-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.spinner {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 18px;
+  color: #6b7280;
+}
+.signup-link {
+  color: #6d28d9;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.security-badge {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 18px;
+  color: #374151;
+}
+
+/* subtle emoji/icons overlay suitable for e-commerce (low opacity) */
+/* No emoji overlays on the login page: keep a clean violet background matching signup */
+
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #6b7280;
+}
+.password-toggle:focus {
+  outline: 2px solid rgba(99, 102, 241, 0.2);
+  border-radius: 6px;
+}
+
+/* MFA form actions: professional placement and spacing between buttons */
+.mfa-form .form-actions {
+  display: flex;
+  gap: 12px; /* space between buttons */
+  justify-content: flex-start; /* align buttons to the left for a professional layout */
+  align-items: center;
+  margin-top: 8px;
+}
+
+/* Button styles used across login/mfa */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  background: linear-gradient(90deg, #6d28d9, #ec4899);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.12);
+}
+.btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn.ghost {
+  background: #fff;
+  color: #0f172a;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: none;
+}
+
+/* Make sure in very small viewports the buttons wrap nicely */
+@media (max-width: 420px) {
+  .mfa-form .form-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .btn {
+    width: 100%;
+  }
+  .btn.ghost {
+    width: 100%;
   }
 }
 
-@keyframes fadeInUp {
+/* Login page background — match Signup but in violet */
+.login-page-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #6d28d9 0%, #8b5cf6 60%);
+  z-index: -1;
+}
+
+/* Welcome screen (pure front-end) */
+.welcome-screen {
+  /* full-bleed e-commerce hero background */
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  box-sizing: border-box;
+  color: white;
+  /* layered background: soft gradient + subtle pattern to feel like a shop hero */
+  background-color: #6b46c1;
+  background-image: radial-gradient(
+      rgba(255, 255, 255, 0.06) 1px,
+      transparent 1px
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(0, 0, 0, 0.06)),
+    linear-gradient(135deg, #6d28d9 0%, #b25cff 50%, #f472b6 100%);
+  background-size: 18px 18px, cover, cover;
+  position: relative;
+  overflow: hidden;
+}
+
+.welcome-screen::before {
+  /* subtle radial confetti elements placed across the hero */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+      circle at 10% 20%,
+      rgba(255, 255, 255, 0.04) 0 6px,
+      transparent 7px
+    ),
+    radial-gradient(
+      circle at 30% 10%,
+      rgba(255, 255, 255, 0.03) 0 5px,
+      transparent 6px
+    ),
+    radial-gradient(
+      circle at 80% 40%,
+      rgba(255, 255, 255, 0.02) 0 8px,
+      transparent 9px
+    );
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.welcome-hero-inner {
+  width: 100%;
+  max-width: 1100px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 48px;
+}
+
+.welcome-card {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.98),
+    rgba(255, 255, 255, 0.92)
+  );
+  color: #0f172a;
+  padding: 34px 40px;
+  border-radius: 12px;
+  box-shadow: 0 30px 60px rgba(2, 6, 23, 0.18);
+  flex: 1 1 640px;
+  border: 1px solid rgba(15, 23, 42, 0.04);
+}
+
+.welcome-title {
+  font-size: 48px;
+  line-height: 1.02;
+  margin: 0 0 12px 0;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.welcome-sub {
+  font-size: 18px;
+  color: #6b7280;
+  margin: 0 0 18px 0;
+}
+
+.welcome-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.cta-button {
+  padding: 12px 18px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #6d28d9, #ec4899);
+  color: #fff;
+  border: none;
+  font-weight: 800;
+  cursor: pointer;
+}
+.logout-button {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  cursor: pointer;
+}
+
+/* Professional logout button placed in top-right of hero */
+.logout-top {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f172a;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.12);
+  cursor: pointer;
+}
+
+.welcome-graphics {
+  flex: 0 0 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.floating-card {
+  width: 160px;
+  height: 160px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #ec4899, #6d28d9);
+  box-shadow: 0 18px 40px rgba(16, 24, 40, 0.18);
+}
+
+/* Brand badge (professional logo placement) */
+.brand-badge {
+  position: absolute;
+  top: 22px;
+  left: 22px;
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #ec4899, #6d28d9);
+  box-shadow: 0 12px 30px rgba(16, 24, 40, 0.18);
+  font-size: 18px;
+}
+
+/* Optional: if user places exact image into public folder, use it as a background fallback */
+.welcome-screen.has-image {
+  background-size: cover;
+  background-position: center;
+}
+
+.hero-overlays {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hero-overlays .icon {
+  position: absolute;
+  width: 96px;
+  height: 96px;
+  opacity: 0.06;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.08));
+}
+
+.hero-overlays .icon.shop {
+  left: 6%;
+  top: 10%;
+  transform: rotate(-8deg);
+}
+.hero-overlays .icon.cart {
+  right: 6%;
+  bottom: 10%;
+  transform: rotate(6deg);
+}
+
+/* small decorative product tiles in the background to suggest e-commerce */
+.hero-overlays::before,
+.hero-overlays::after {
+  content: "";
+  position: absolute;
+  width: 180px;
+  height: 120px;
+  border-radius: 12px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04),
+    rgba(255, 255, 255, 0.01)
+  );
+  box-shadow: 0 12px 40px rgba(2, 6, 23, 0.06) inset;
+  opacity: 0.18;
+}
+.hero-overlays::before {
+  left: 20%;
+  bottom: 8%;
+  transform: rotate(-6deg);
+}
+.hero-overlays::after {
+  right: 18%;
+  top: 28%;
+  transform: rotate(8deg);
+}
+
+/* ============================================
+   EMAIL OTP VERIFICATION SECTION
+   ============================================ */
+
+.otp-section {
+  margin-top: 32px;
+  padding: 32px;
+  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
+  animation: slideInUp 0.4s ease-out;
+
+  @media (max-width: 640px) {
+    padding: 24px 16px;
+    margin-top: 24px;
+  }
+}
+
+@keyframes slideInUp {
   from {
     opacity: 0;
     transform: translateY(20px);
@@ -21,353 +501,124 @@
   }
 }
 
-.login-card {
-  background: white;
-  border-radius: 16px;
-  box-shadow: var(--shadow-xl);
-  padding: 48px 40px;
-  
-  @media (max-width: 640px) {
-    padding: 32px 24px;
-    border-radius: 12px;
-  }
-}
-
-.login-header {
+.otp-header {
   text-align: center;
-  margin-bottom: 32px;
-}
-
-.logo-container {
-  display: flex;
-  justify-content: center;
   margin-bottom: 24px;
-}
 
-.logo-icon {
-  width: 64px;
-  height: 64px;
-  color: var(--primary-color);
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  padding: 12px;
-  border-radius: 16px;
-  box-shadow: var(--shadow-lg);
-  
-  path {
-    stroke: white;
+  .otp-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, #6d28d9, #ec4899);
+    border-radius: 50%;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.3);
+
+    svg {
+      color: white;
+    }
   }
-}
 
-.login-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 8px;
-  
-  @media (max-width: 640px) {
+  h2 {
     font-size: 24px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 8px 0;
   }
-}
 
-.login-subtitle {
-  font-size: 16px;
-  color: var(--text-secondary);
-  
-  @media (max-width: 640px) {
+  p {
     font-size: 14px;
-  }
-}
+    color: #6b7280;
+    margin: 0;
+    line-height: 1.5;
 
-.message-banner {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 24px;
-  font-size: 14px;
-  font-weight: 500;
-  animation: slideDown 0.3s ease-out;
-
-  &.success {
-    background-color: #d1fae5;
-    color: #065f46;
-    border: 1px solid #a7f3d0;
-  }
-
-  &.error {
-    background-color: #fee2e2;
-    color: #991b1b;
-    border: 1px solid #fecaca;
-  }
-
-  .message-icon {
-    width: 20px;
-    height: 20px;
-    margin-right: 12px;
-    flex-shrink: 0;
-  }
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.login-form {
-  margin-bottom: 24px;
-}
-
-.form-group {
-  margin-bottom: 20px;
-
-  &:last-of-type {
-    margin-bottom: 24px;
-  }
-}
-
-.form-label {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 8px;
-}
-
-.input-wrapper {
-  position: relative;
-}
-
-.input-icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
-  color: var(--text-secondary);
-  pointer-events: none;
-  transition: color 0.2s ease;
-}
-
-.form-input {
-  width: 100%;
-  padding: 12px 14px 12px 44px;
-  font-size: 15px;
-  border: 2px solid var(--border-color);
-  border-radius: 10px;
-  transition: var(--transition-base);
-  outline: none;
-  background-color: white;
-  color: var(--text-primary);
-
-  &::placeholder {
-    color: var(--text-secondary);
-    opacity: 0.6;
-  }
-
-  &:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-
-    ~ .input-icon {
-      color: var(--primary-color);
+    strong {
+      color: #111827;
+      font-weight: 600;
     }
   }
+}
 
-  &.error {
-    border-color: var(--error-color);
-    
-    &:focus {
-      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
-    }
+.otp-form {
+  .form-group {
+    margin-bottom: 20px;
   }
 
-  @media (max-width: 640px) {
-    font-size: 16px; // Prevent zoom on iOS
+  .otp-input {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: 8px;
+    font-family: "Courier New", monospace;
+    padding: 16px;
   }
 }
 
-.error-message {
+.otp-actions {
   display: flex;
-  align-items: center;
-  margin-top: 6px;
-  font-size: 13px;
-  color: var(--error-color);
-  font-weight: 500;
+  gap: 12px;
+  margin-top: 16px;
+  flex-wrap: wrap;
 
-  &::before {
-    content: '⚠';
-    margin-right: 6px;
-  }
-}
-
-.form-options {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-  
   @media (max-width: 640px) {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
   }
 }
 
-.remember-me {
-  display: flex;
-  align-items: center;
-}
-
-.checkbox-input {
-  width: 18px;
-  height: 18px;
-  margin-right: 8px;
-  cursor: pointer;
-  accent-color: var(--primary-color);
-}
-
-.checkbox-label {
+.resend-button,
+.back-button {
+  flex: 1;
+  padding: 12px 20px;
   font-size: 14px;
-  color: var(--text-secondary);
+  font-weight: 600;
+  border-radius: 8px;
   cursor: pointer;
-  user-select: none;
-}
-
-.forgot-link {
-  font-size: 14px;
-  color: var(--primary-color);
-  text-decoration: none;
-  font-weight: 600;
-  transition: color 0.2s ease;
-
-  &:hover {
-    color: var(--primary-dark);
-    text-decoration: underline;
-  }
-
-  &:focus {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-}
-
-.submit-button {
-  width: 100%;
-  padding: 14px 24px;
-  font-size: 16px;
-  font-weight: 600;
-  color: white;
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  transition: all 0.2s ease;
   border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: var(--transition-base);
-  box-shadow: var(--shadow-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-
-  &:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
-  }
-
-  &:active:not(:disabled) {
-    transform: translateY(0);
-  }
-
-  &:focus {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
-  }
+  outline: none;
 
   &:disabled {
-    opacity: 0.7;
+    opacity: 0.5;
     cursor: not-allowed;
   }
-}
 
-.spinner {
-  width: 20px;
-  height: 20px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
+  @media (max-width: 640px) {
+    width: 100%;
   }
 }
 
-.spinner-circle {
-  opacity: 0.25;
-}
+.resend-button {
+  background: white;
+  color: #6d28d9;
+  border: 2px solid #6d28d9;
 
-.spinner-path {
-  opacity: 0.75;
-}
-
-.login-footer {
-  text-align: center;
-  padding-top: 24px;
-  border-top: 1px solid var(--border-color);
-}
-
-.signup-text {
-  font-size: 14px;
-  color: var(--text-secondary);
-}
-
-.signup-link {
-  color: var(--primary-color);
-  background: none;
-  border: none;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0;
-  transition: color 0.2s ease;
-
-  &:hover {
-    color: var(--primary-dark);
-    text-decoration: underline;
-  }
-
-  &:focus {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
-    border-radius: 4px;
+  &:hover:not(:disabled) {
+    background: #6d28d9;
+    color: white;
   }
 }
 
-.security-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 24px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  border-radius: 8px;
-  color: white;
-  font-size: 13px;
-  font-weight: 500;
+.back-button {
+  background: white;
+  color: #6b7280;
+  border: 2px solid #e5e7eb;
+
+  &:hover:not(:disabled) {
+    background: #f9fafb;
+    border-color: #d1d5db;
+    color: #374151;
+  }
 }
 
-.security-icon {
-  width: 18px;
-  height: 18px;
+/* Info message type for OTP sent notification */
+.message-banner.info {
+  background: linear-gradient(135deg, #dbeafe, #eff6ff);
+  border-left: 4px solid #3b82f6;
+  color: #1e40af;
+
+  .message-icon {
+    color: #3b82f6;
+  }
 }
