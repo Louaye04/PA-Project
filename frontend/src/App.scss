@@ -8,10 +8,10 @@
 
 /* Apply the purple gradient only when admin is NOT active. */
 .app:not(.admin-active) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary) 100%);
 }
 
 /* Ensure admin view has a neutral background (defeat other gradients if needed). */
 .app.admin-active {
-  background: #f7f7fb !important;
+  background: var(--bg-100) !important;
 }

@@ -53,8 +53,8 @@ const AdminDashboard = ({ userName }) => {
     const prevDocBg = document.documentElement.style.background;
 
     // Apply a neutral light background to entire page (covers edges)
-    document.body.style.background = '#f7f7fb';
-    document.documentElement.style.background = '#f7f7fb';
+    document.body.style.background = 'var(--bg-100)';
+    document.documentElement.style.background = 'var(--bg-100)';
 
     // mark global elements so admin-specific CSS can override app-level backgrounds
     const html = document.documentElement;

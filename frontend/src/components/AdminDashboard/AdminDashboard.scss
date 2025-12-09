@@ -1,65 +1,65 @@
 .admin-dashboard-root{display:flex;min-height:100vh;font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;width:100vw}
 
 /* Ensure global backgrounds are neutral when admin view is active to remove purple edges */
-html.admin-active, body.admin-active, #root.admin-active, .app.admin-active { background: #f7f7fb !important; }
+html.admin-active, body.admin-active, #root.admin-active, .app.admin-active { background: var(--bg-100) !important; }
 
 /* Fallback: force neutral background across base elements while admin mounted */
 html, body, #root, .app { background-color: transparent; }
 
-.admin-sidebar{width:240px;background:#ffffff;color:#111;padding:20px 16px;display:flex;flex-direction:column;justify-content:flex-start;border-right:1px solid #eef2f7}
+.admin-sidebar{width:240px;background:var(--surface);color:var(--text);padding:20px 16px;display:flex;flex-direction:column;justify-content:flex-start;border-right:1px solid var(--border)}
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:20px}
 .brand img, .brand svg{width:44px;height:44px}
 .brand-name{display:none}
 .nav-list{display:flex;flex-direction:column;gap:8px}
-.nav-item{background:transparent;border:none;color:#374151;text-align:left;padding:10px 12px;border-radius:8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px}
+.nav-item{background:transparent;border:none;color:var(--text-muted);text-align:left;padding:10px 12px;border-radius:8px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px}
 .nav-item .icon{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:18px}
 .nav-item .label{display:inline-block}
-.nav-item.active{background:linear-gradient(90deg,#f3f4ff,#f8f5ff);box-shadow:0 6px 18px rgba(2,6,23,0.04)}
+.nav-item.active{background:linear-gradient(90deg,var(--bg-100),var(--surface));box-shadow:0 6px 18px rgba(2,6,23,0.04)}
 /* sidebar logout removed: using single professional logout in topbar */
 
-.admin-main{flex:1;padding:24px;background:#f7f7fb}
+.admin-main{flex:1;padding:24px;background:var(--bg-100)}
 .admin-topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
 .topbar-right{display:flex;align-items:center;gap:18px}
 .topbar-left{display:flex;align-items:center;gap:12px}
-.admin-greeting{font-size:18px;font-weight:700;color:#111}
+.admin-greeting{font-size:18px;font-weight:700;color:var(--text)}
 .metrics{display:flex;gap:12px;align-items:center}
-.metric{background:#fff;padding:14px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,0.06);min-width:110px;text-align:center}
+.metric{background:var(--surface);padding:14px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,0.06);min-width:110px;text-align:center}
 .metric-value{font-weight:700;font-size:18px}
-.metric-label{font-size:12px;color:#6b7280}
-.metric-revenue .metric-value{color:#111827}
-.top-logout{background:#fff;border-radius:10px;padding:10px 12px;border:none;cursor:pointer}
+.metric-label{font-size:12px;color:var(--text-muted)}
+.metric-revenue .metric-value{color:var(--text)}
+.top-logout{background:var(--surface);border-radius:10px;padding:10px 12px;border:none;cursor:pointer}
 
 .admin-content{display:flex;gap:20px}
 .content-left{flex:2}
 .content-right{width:320px}
-.card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 8px 30px rgba(16,24,40,0.06)}
+.card{background:var(--surface);border-radius:12px;padding:16px;box-shadow:0 8px 30px rgba(16,24,40,0.06)}
 .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .card-header h3{margin:0}
-.small{background:transparent;border:none;color:#4f46e5;cursor:pointer}
+.small{background:transparent;border:none;color:var(--primary);cursor:pointer}
 .orders-table{width:100%;border-collapse:collapse}
-.orders-table th, .orders-table td{padding:10px 8px;text-align:left;border-bottom:1px solid #eef2f7}
-.orders-table th{font-size:13px;color:#6b7280}
-.status{padding:6px 8px;border-radius:8px;font-size:12px;color:#fff}
-.status.livrée{background:#10b981}
-.status.livree{background:#10b981}
-.status.enattente{background:#f59e0b}
-.status.terminé{background:#ef4444}
-.status.encours{background:#3b82f6}
+.orders-table th, .orders-table td{padding:10px 8px;text-align:left;border-bottom:1px solid var(--border)}
+.orders-table th{font-size:13px;color:var(--text-muted)}
+.status{padding:6px 8px;border-radius:8px;font-size:12px;color:var(--on-primary)}
+.status.livrée{background:var(--success)}
+.status.livree{background:var(--success)}
+.status.enattente{background:var(--warning)}
+.status.terminé{background:var(--danger)}
+.status.encours{background:var(--primary)}
 
 .clients-list{list-style:none;padding:0;margin:0}
-.client-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6}
-.avatar{width:40px;height:40px;border-radius:50%;background:#e9d5ff;color:#5b21b6;display:flex;align-items:center;justify-content:center;font-weight:700}
+.client-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--muted-accent);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700}
 .client-name{font-weight:600}
-.clients-cta{margin-top:12px;background:linear-gradient(90deg,#4f46e5,#7c3aed);color:#fff;border:none;padding:10px 12px;border-radius:10px;cursor:pointer;width:100%}
+.clients-cta{margin-top:12px;background:var(--primary);color:var(--on-primary);border:none;padding:10px 12px;border-radius:10px;cursor:pointer;width:100%}
 
 .content-left.full{flex:1}
-.clients-full-card .clients-list.full-list .client-row{display:flex;align-items:center;gap:14px;padding:12px;border-bottom:1px solid #f3f4f6}
-.client-email{color:#6b7280;font-size:13px}
+.clients-full-card .clients-list.full-list .client-row{display:flex;align-items:center;gap:14px;padding:12px;border-bottom:1px solid var(--border)}
+.client-email{color:var(--text-muted);font-size:13px}
 .settings-form .form-row{margin-bottom:12px}
-.settings-form label{display:block;font-size:13px;color:#374151;margin-bottom:6px}
-.settings-form input[type="text"], .settings-form select{width:100%;padding:8px;border-radius:8px;border:1px solid #e6e9ef}
+.settings-form label{display:block;font-size:13px;color:var(--text);margin-bottom:6px}
+.settings-form input[type="text"], .settings-form select{width:100%;padding:8px;border-radius:8px;border:1px solid var(--border)}
 .form-actions{margin-top:12px}
-.small{background:transparent;border:1px solid #4f46e5;color:#4f46e5;padding:6px 10px;border-radius:8px;cursor:pointer}
+.small{background:transparent;border:1px solid var(--primary);color:var(--primary);padding:6px 10px;border-radius:8px;cursor:pointer}
 
 /* collapsed sidebar state */
 .admin-sidebar.collapsed{width:72px;padding:12px}

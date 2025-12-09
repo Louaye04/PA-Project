@@ -1,47 +1,60 @@
 import React, { useEffect, useState } from 'react';
 import './BuyerDashboard.scss';
 import Logo from '../Logo/Logo';
-
-const sampleProducts = [
-  { id: 1, name: 'Chaussures de sport', price: 5000, seller: 'Kahla Hind', stock: 23, desc: 'Chaussures confortables, semelle amortissante.' },
-  { id: 2, name: 'Sac à dos urbain', price: 6000, seller: 'Amine Shop', stock: 12, desc: 'Compartiments multiples, imperméable.' },
-  { id: 3, name: 'T-shirt BKH', price: 1500, seller: 'BKH Store', stock: 50, desc: 'Coton biologique, coupe moderne.' }
-];
+import SecureChat from '../SecureChat/SecureChat';
+import { getAllProducts } from '../../utils/product-api';
+import { createOrder, getMyOrders } from '../../utils/order-api';
 
 const BuyerDashboard = ({ userName }) => {
-  const [products, setProducts] = useState(() => {
-    try { const raw = localStorage.getItem('buyerProducts'); if (raw) return JSON.parse(raw); } catch (e) {}
-    return sampleProducts;
-  });
+  const [products, setProducts] = useState([]);
   const [cart, setCart] = useState(() => {
     try { const raw = localStorage.getItem('buyerCart'); if (raw) return JSON.parse(raw); } catch (e) {}
     return [];
   });
   const [query, setQuery] = useState('');
-  const [currentTab, setCurrentTab] = useState('home'); // 'home','orders','favorites','help','settings'
-  const [productModal, setProductModal] = useState(null); // product to view
+  const [currentTab, setCurrentTab] = useState('home');
+  const [productModal, setProductModal] = useState(null);
   const [favorites, setFavorites] = useState(() => {
     try { const raw = localStorage.getItem('buyerFavorites'); if (raw) return JSON.parse(raw); } catch (e) {}
     return [];
   });
-  const [orders, setOrders] = useState(() => {
-    try { const raw = localStorage.getItem('buyerOrders'); if (raw) return JSON.parse(raw); } catch (e) {}
-    return [
-      { id: 201, date: '2025-11-12', items: [{name: 'T-shirt BKH', qty:1}], total: 1500, status: 'Livrée' },
-      { id: 202, date: '2025-11-16', items: [{name: 'Chaussures de sport', qty:1}], total: 5000, status: 'En attente' }
-    ];
-  });
+  const [orders, setOrders] = useState([]);
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [settings, setSettings] = useState(() => ({ currency: 'DA', timezone: 'Africa/Algiers', contactEmail: 'support@bkh.example' }));
-  // Logout handler for buyer
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const handleLogout = () => {
     try { localStorage.removeItem('authToken'); localStorage.removeItem('userEmail'); localStorage.removeItem('userName'); } catch (e) {}
-    // reload to show login
     window.location.reload();
   };
+
   const [checkout, setCheckout] = useState(null);
   const [paymentResult, setPaymentResult] = useState(null);
   const [cartVisible, setCartVisible] = useState(false);
+  const [secureChatOpen, setSecureChatOpen] = useState(false);
+  const [chatProduct, setChatProduct] = useState(null);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const [productsData, ordersData] = await Promise.all([
+        getAllProducts(),
+        getMyOrders()
+      ]);
+      setProducts(productsData);
+      setOrders(ordersData);
+    } catch (err) {
+      setError(err.response?.data?.error || err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   useEffect(() => {
     // Do not modify the document body background here — keep the app neutral and professional.
@@ -67,6 +80,23 @@ const BuyerDashboard = ({ userName }) => {
   const updateQty = (id, qty) => setCart(prev => prev.map(x => x.id === id ? { ...x, qty } : x));
 
   const filtered = products.filter(p => p.name.toLowerCase().includes(query.toLowerCase()) || p.desc.toLowerCase().includes(query.toLowerCase()));
+
+  if (loading) {
+    return (
+      <div className="buyer-dashboard-root" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+        <h2>Chargement...</h2>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="buyer-dashboard-root" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column' }}>
+        <h2>Erreur: {error}</h2>
+        <button className="btn" onClick={loadData}>Réessayer</button>
+      </div>
+    );
+  }
 
   return (
     <div className="buyer-dashboard-root">
@@ -106,18 +136,36 @@ const BuyerDashboard = ({ userName }) => {
             <section className="catalog">
               <h2>Produits</h2>
               <div className="grid">
-                {filtered.map(p => (
-                  <article key={p.id} className="card">
-                    <div className="card-header">
-                      <div className="card-title">{p.name}</div>
-                      <div className="card-seller">{p.seller}</div>
-                    </div>
-                    <div className="card-body">
-                      <p className="desc">{p.desc}</p>
-                    </div>
+                {filtered.length === 0 ? (
+                  <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px' }}>
+                    {products.length === 0 ? 'Aucun produit disponible pour le moment.' : 'Aucun produit ne correspond à votre recherche.'}
+                  </div>
+                ) : (
+                  filtered.map(p => (
+                    <article key={p.id} className="card">
+                      <div className="card-header">
+                        <div className="card-title">{p.name}</div>
+                        <div className="card-seller">{p.sellerName || p.seller}</div>
+                      </div>
+                      <div className="card-body">
+                        <p className="desc">{p.desc}</p>
+                      </div>
                     <div className="card-footer">
                       <div className="price">{p.price} DA</div>
                       <div className="actions">
+                        <button className="btn secure-buy" onClick={async () => {
+                          const qty = prompt('Quantité à commander:', '1');
+                          if (!qty || isNaN(qty) || qty <= 0) return;
+                          try {
+                            await createOrder({ productId: p.id, quantity: Number(qty) });
+                            alert('Commande créée avec succès!');
+                            await loadData();
+                            setChatProduct(p);
+                            setSecureChatOpen(true);
+                          } catch (err) {
+                            alert('Erreur lors de la commande: ' + (err.response?.data?.error || err.message));
+                          }
+                        }}>🔐 Acheter avec Canal Sécurisé</button>
                         <button className="btn" onClick={() => addToCart(p)}>Ajouter au panier</button>
                         <button className="btn ghost" onClick={() => setProductModal(p)}>Voir</button>
                         <button className="btn" onClick={() => {
@@ -130,8 +178,9 @@ const BuyerDashboard = ({ userName }) => {
                         }}>{favorites.find(x=>x.id===p.id) ? 'Favori' : 'Ajouter aux favoris'}</button>
                       </div>
                     </div>
-                  </article>
-                ))}
+                    </article>
+                  ))
+                )}
               </div>
             </section>
           </>
@@ -141,27 +190,21 @@ const BuyerDashboard = ({ userName }) => {
           <section className="orders-view">
             <h2>Mes commandes</h2>
             <div className="orders-list">
-              {orders.map(o => (
-                <div className="order-card" key={o.id}>
-                  <div className="order-header">Commande #{o.id} — {o.date}</div>
-                  <div className="order-body">
-                    <div>Articles: {o.items.map(i=>`${i.name} x${i.qty}`).join(', ')}</div>
-                    <div>Total: {o.total} DA</div>
-                    <div>Statut: <strong>{o.status}</strong></div>
+              {orders.length === 0 ? (
+                <div>Aucune commande pour le moment.</div>
+              ) : (
+                orders.map(o => (
+                  <div className="order-card" key={o.id}>
+                    <div className="order-header">Commande #{o.id} — {new Date(o.createdAt).toLocaleDateString()}</div>
+                    <div className="order-body">
+                      <div>Produit: {o.productName} x{o.quantity}</div>
+                      <div>Vendeur: {o.sellerName}</div>
+                      <div>Total: {o.totalPrice} DA</div>
+                      <div>Statut: <strong>{o.status}</strong></div>
+                    </div>
                   </div>
-                  <div className="order-actions">
-                    <select value={o.status} onChange={(e)=>{
-                      const s = e.target.value; setOrders(prev => prev.map(x=> x.id===o.id?({...x,status:s}):x));
-                      try { localStorage.setItem('buyerOrders', JSON.stringify(orders)); } catch(e){}
-                    }}>
-                      <option>En attente</option>
-                      <option>En cours</option>
-                      <option>Livrée</option>
-                      <option>Terminé</option>
-                    </select>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </section>
         )}
@@ -247,13 +290,22 @@ const BuyerDashboard = ({ userName }) => {
             <div className="cm-panel">
               <h3>Paiement sécurisé</h3>
               <p>Montant à régler: <strong>{cart.reduce((s,i)=>s+i.price*i.qty,0)} DA</strong></p>
-              <form onSubmit={(e) => { e.preventDefault();
+              <form onSubmit={async (e) => { e.preventDefault();
                   setPaymentResult({ success: null, message: 'Traitement en cours...' });
-                  setTimeout(() => {
+                  try {
+                    for (const item of cart) {
+                      await createOrder({ productId: item.id, quantity: item.qty });
+                    }
                     setPaymentResult({ success: true, message: 'Paiement accepté — Merci pour votre commande.' });
                     setCart([]);
-                    setCheckout(null);
-                  }, 1200);
+                    await loadData();
+                    setTimeout(() => {
+                      setCheckout(null);
+                      setPaymentResult(null);
+                    }, 2000);
+                  } catch (err) {
+                    setPaymentResult({ success: false, message: 'Erreur: ' + (err.response?.data?.error || err.message) });
+                  }
                 }} className="payment-form">
                 <label>Nom sur la carte<input name="cardName" required/></label>
                 <label>Numéro de carte<input name="cardNumber" inputMode="numeric" pattern="[0-9 ]{13,19}" placeholder="4242 4242 4242 4242" required/></label>
@@ -287,6 +339,30 @@ const BuyerDashboard = ({ userName }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Secure Chat Modal */}
+      {secureChatOpen && chatProduct && (
+        <SecureChat
+          currentUser={{
+            id: localStorage.getItem('userEmail') || 'buyer@example.com',
+            email: localStorage.getItem('userEmail') || 'buyer@example.com',
+            name: userName || 'Acheteur',
+            role: 'buyer'
+          }}
+          otherUser={{
+            id: chatProduct.seller,
+            email: chatProduct.seller,
+            name: chatProduct.seller,
+            role: 'seller'
+          }}
+          productId={chatProduct.id.toString()}
+          token={localStorage.getItem('authToken') || ''}
+          onClose={() => {
+            setSecureChatOpen(false);
+            setChatProduct(null);
+          }}
+        />
       )}
     </div>
   );

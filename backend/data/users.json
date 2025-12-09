@@ -78,5 +78,21 @@
     "name": "Abdennour BABAAMER",
     "role": "seller",
     "createdAt": "2025-11-29T20:21:10.887Z"
+  },
+  {
+    "id": 8,
+    "email": "khobziabderrahmane@gmail.com",
+    "password": "$2a$10$qE1fdJDdWSRHI.LCYHLkwePO4V6nwyZ09J8Z8afe13y6fwLNdSLh2",
+    "name": "Khobzi Abderrahmane",
+    "role": "buyer",
+    "createdAt": "2025-12-01T11:23:07.513Z"
+  },
+  {
+    "id": 9,
+    "email": "ninkopvp@gmail.com",
+    "password": "$2a$10$UWb0Kx/LQ2ym8y13FQ4CCuZr5EzRkd41nToXGgVJoZSFOmdnCdCla",
+    "name": "Buyer",
+    "role": "seller",
+    "createdAt": "2025-12-03T08:53:57.636Z"
   }
 ]

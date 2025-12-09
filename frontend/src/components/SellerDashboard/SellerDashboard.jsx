@@ -1,83 +1,82 @@
 import React, { useEffect, useState } from 'react';
 import './SellerDashboard.scss';
 import Logo from '../Logo/Logo';
+import SecureChat from '../SecureChat/SecureChat';
+import { getMyProducts, createProduct, updateProduct, deleteProduct } from '../../utils/product-api';
+import { getMyOrders, updateOrderStatus } from '../../utils/order-api';
 
 const SellerDashboard = ({ userName }) => {
-  // Products and orders stored in local state (and persisted to localStorage)
-  const [products, setProducts] = useState(() => {
-    try {
-      const raw = localStorage.getItem('sellerProducts');
-      if (raw) return JSON.parse(raw);
-    } catch (e) {}
-    return [
-      { id: 1, name: 'Chaussures de sport', price: 5000, stock: 23, desc: 'Chaussures confortables pour le sport.' },
-      { id: 2, name: 'T-shirt BKH', price: 1500, stock: 50, desc: 'T-shirt en coton premium.' },
-      { id: 3, name: 'Sac à dos', price: 6000, stock: 12, desc: 'Sac à dos robuste pour usage quotidien.' }
-    ];
-  });
-
-  const [orders, setOrders] = useState(() => {
-    try {
-      const raw = localStorage.getItem('sellerOrders');
-      if (raw) return JSON.parse(raw);
-    } catch (e) {}
-    return [
-      { id: 101, name: 'Chaussures de sport', price: 5000, status: 'En attente', customer: 'Kahla Hind' },
-      { id: 102, name: 'Sac à dos', price: 6000, status: 'Livrée', customer: 'Amine B.' },
-      { id: 103, name: 'T-shirt BKH', price: 1500, status: 'En cours', customer: 'Sara B.' }
-    ];
-  });
-
+  const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
   const [modal, setModal] = useState({ open: false, mode: null, product: null });
   const [ordersPanelOpen, setOrdersPanelOpen] = useState(false);
   const [ordersFilter, setOrdersFilter] = useState('Toutes');
+  const [secureChatOpen, setSecureChatOpen] = useState(false);
+  const [chatOrder, setChatOrder] = useState(null);
+
+  // Charger les produits et commandes au montage
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('authToken');
+      
+      if (!token) {
+        setError('Non authentifié');
+        return;
+      }
+
+      const [productsRes, ordersRes] = await Promise.all([
+        getMyProducts(token),
+        getMyOrders(token)
+      ]);
+
+      setProducts(productsRes.data || []);
+      setOrders(ordersRes.data || []);
+      setError(null);
+    } catch (err) {
+      console.error('Erreur chargement données:', err);
+      setError(err.response?.data?.error || 'Erreur de chargement');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Save current body background styles to restore later
     const prevBackground = document.body.style.background;
     const prevBackgroundSize = document.body.style.backgroundSize;
     const prevBackgroundPosition = document.body.style.backgroundPosition;
     const prevBackgroundAttachment = document.body.style.backgroundAttachment;
     const prevBackgroundRepeat = document.body.style.backgroundRepeat;
-    // Save current .app background to restore later
     const appEl = document.querySelector('.app');
     const prevAppBackground = appEl ? appEl.style.background : null;
 
-    // Apply ecommerce background to whole page
     document.body.style.background = "url('/interface-ecommerce.png') no-repeat center center fixed";
     document.body.style.backgroundSize = 'cover';
     document.body.style.backgroundPosition = 'center';
     document.body.style.backgroundAttachment = 'fixed';
     document.body.style.backgroundRepeat = 'no-repeat';
-    // Make the main app container transparent so the body background shows through
     if (appEl) {
       appEl.style.background = 'transparent';
     }
 
-    // persist products/orders when component unmounts
     return () => {
-      try { localStorage.setItem('sellerProducts', JSON.stringify(products)); } catch (e) {}
-      try { localStorage.setItem('sellerOrders', JSON.stringify(orders)); } catch (e) {}
-      // Restore previous body background
       document.body.style.background = prevBackground || '';
       document.body.style.backgroundSize = prevBackgroundSize || '';
       document.body.style.backgroundPosition = prevBackgroundPosition || '';
       document.body.style.backgroundAttachment = prevBackgroundAttachment || '';
       document.body.style.backgroundRepeat = prevBackgroundRepeat || '';
-      // Restore .app background
       if (appEl) {
         appEl.style.background = prevAppBackground || '';
       }
     };
   }, []);
-
-  // Persist to localStorage when products or orders change
-  useEffect(() => {
-    try { localStorage.setItem('sellerProducts', JSON.stringify(products)); } catch (e) {}
-  }, [products]);
-  useEffect(() => {
-    try { localStorage.setItem('sellerOrders', JSON.stringify(orders)); } catch (e) {}
-  }, [orders]);
 
   const bgStyle = { background: 'transparent' };
 
@@ -87,20 +86,62 @@ const SellerDashboard = ({ userName }) => {
   const openViewModal = (p) => setModal({ open: true, mode: 'view', product: { ...p } });
   const closeModal = () => setModal({ open: false, mode: null, product: null });
 
-  const saveProduct = (prod) => {
-    if (modal.mode === 'add') {
-      const nextId = products.length ? Math.max(...products.map(x => x.id)) + 1 : 1;
-      setProducts(prev => [...prev, { ...prod, id: nextId }]);
-    } else if (modal.mode === 'edit') {
-      setProducts(prev => prev.map(p => p.id === prod.id ? prod : p));
+  const saveProduct = async (prod) => {
+    try {
+      if (modal.mode === 'add') {
+        await createProduct(prod);
+      } else if (modal.mode === 'edit') {
+        await updateProduct(prod.id, prod);
+      }
+      closeModal();
+      await loadData();
+    } catch (err) {
+      alert('Erreur lors de la sauvegarde du produit: ' + (err.response?.data?.error || err.message));
     }
-    closeModal();
+  };
+
+  const handleDeleteProduct = async (productId, productName) => {
+    const ok = window.confirm(`Supprimer le produit « ${productName} » ?`);
+    if (!ok) return;
+    try {
+      await deleteProduct(productId);
+      await loadData();
+    } catch (err) {
+      alert('Erreur lors de la suppression: ' + (err.response?.data?.error || err.message));
+    }
   };
 
   const toggleOrdersPanel = () => setOrdersPanelOpen(v => !v);
-  const updateOrderStatus = (orderId, status) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+  
+  const handleUpdateOrderStatus = async (orderId, status) => {
+    try {
+      await updateOrderStatus(orderId, status);
+      await loadData();
+    } catch (err) {
+      alert('Erreur lors de la mise à jour du statut: ' + (err.response?.data?.error || err.message));
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="seller-dashboard" style={bgStyle}>
+        <div className="seller-content" style={{ textAlign: 'center', padding: '100px 20px' }}>
+          <h2>Chargement...</h2>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="seller-dashboard" style={bgStyle}>
+        <div className="seller-content" style={{ textAlign: 'center', padding: '100px 20px' }}>
+          <h2>Erreur: {error}</h2>
+          <button className="btn" onClick={loadData}>Réessayer</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="seller-dashboard" style={bgStyle}>
@@ -158,27 +199,29 @@ const SellerDashboard = ({ userName }) => {
       <section className="seller-products">
         <h3>Vos produits</h3>
         <div className="products-grid">
-          {products.map(p => (
-            <div className="product-row" key={p.id}>
-              <div className="product-info">
-                <strong>{p.name}</strong>
-                <div className="muted">{p.price} DA — Stock: {p.stock}</div>
-                <div className="product-desc">{p.desc}</div>
-              </div>
-              <div className="product-actions">
-                <button className="action edit" onClick={() => openEditModal(p)}>Modification</button>
-                <button className="action view" onClick={() => openViewModal(p)}>Voir</button>
-                <button
-                  className="action delete"
-                  onClick={() => {
-                    const ok = window.confirm(`Supprimer le produit « ${p.name} » ?`);
-                    if (!ok) return;
-                    setProducts(prev => prev.filter(x => x.id !== p.id));
-                  }}
-                >Supprimer</button>
-              </div>
+          {products.length === 0 ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
+              Aucun produit pour le moment. Cliquez sur "Ajouter un produit" pour commencer.
             </div>
-          ))}
+          ) : (
+            products.map(p => (
+              <div className="product-row" key={p.id}>
+                <div className="product-info">
+                  <strong>{p.name}</strong>
+                  <div className="muted">{p.price} DA — Stock: {p.stock}</div>
+                  <div className="product-desc">{p.desc}</div>
+                </div>
+                <div className="product-actions">
+                  <button className="action edit" onClick={() => openEditModal(p)}>Modification</button>
+                  <button className="action view" onClick={() => openViewModal(p)}>Voir</button>
+                  <button
+                    className="action delete"
+                    onClick={() => handleDeleteProduct(p.id, p.name)}
+                  >Supprimer</button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </section>
 
@@ -192,26 +235,63 @@ const SellerDashboard = ({ userName }) => {
             ))}
           </div>
           <div className="orders-list">
-            {orders
-              .filter(o => ordersFilter === 'Toutes' ? true : o.status === ordersFilter)
-              .map(o => (
-              <div className="order-row" key={o.id}>
-                <div>
-                  <div className="order-name">{o.name} — {o.price} DA</div>
-                  <div className="order-meta">Client: {o.customer} — Statut: {o.status}</div>
+            {orders.length === 0 ? (
+              <div>Aucune commande pour le moment.</div>
+            ) : (
+              orders
+                .filter(o => ordersFilter === 'Toutes' ? true : o.status === ordersFilter)
+                .map(o => (
+                <div className="order-row" key={o.id}>
+                  <div>
+                    <div className="order-name">{o.productName} x{o.quantity} — {o.totalPrice} DA</div>
+                    <div className="order-meta">Client: {o.buyerName} — Statut: {o.status}</div>
+                  </div>
+                  <div className="order-actions">
+                    <button 
+                      className="action secure-chat-btn" 
+                      onClick={() => {
+                        setChatOrder(o);
+                        setSecureChatOpen(true);
+                      }}
+                    >
+                      🔐 Chat Sécurisé
+                    </button>
+                    <select value={o.status} onChange={(e) => handleUpdateOrderStatus(o.id, e.target.value)}>
+                      <option>En attente</option>
+                      <option>En cours</option>
+                      <option>Livrée</option>
+                      <option>Terminé</option>
+                    </select>
+                  </div>
                 </div>
-                <div className="order-actions">
-                  <select value={o.status} onChange={(e) => updateOrderStatus(o.id, e.target.value)}>
-                    <option>En attente</option>
-                    <option>En cours</option>
-                    <option>Livrée</option>
-                    <option>Terminé</option>
-                  </select>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </section>
+      )}
+
+      {/* Secure Chat Modal */}
+      {secureChatOpen && chatOrder && (
+        <SecureChat
+          currentUser={{
+            id: localStorage.getItem('userEmail') || 'seller@example.com',
+            email: localStorage.getItem('userEmail') || 'seller@example.com',
+            name: userName || 'Vendeur',
+            role: 'seller'
+          }}
+          otherUser={{
+            id: chatOrder.buyerId,
+            email: chatOrder.buyerId,
+            name: chatOrder.buyerName,
+            role: 'buyer'
+          }}
+          productId={chatOrder.productId.toString()}
+          token={localStorage.getItem('authToken') || ''}
+          onClose={() => {
+            setSecureChatOpen(false);
+            setChatOrder(null);
+          }}
+        />
       )}
       </div>
     </div>
@@ -234,10 +314,10 @@ function ProductForm({ product: initial, onSave, onCancel }) {
         <input name="name" value={p.name} onChange={handleChange} required />
       </label>
       <label>Prix (DA)
-        <input name="price" type="number" value={p.price} onChange={handleChange} required />
+        <input name="price" type="number" inputMode="decimal" step="0.01" min="0" pattern="[0-9]+([\.][0-9]+)?" value={p.price} onChange={handleChange} onBlur={(e)=>{ if(e.target.value==='') setP(prev=>({...prev, price:0})); }} required />
       </label>
       <label>Stock
-        <input name="stock" type="number" value={p.stock} onChange={handleChange} required />
+        <input name="stock" type="number" inputMode="numeric" step="1" min="0" pattern="[0-9]*" value={p.stock} onChange={handleChange} onBlur={(e)=>{ if(e.target.value==='' || isNaN(Number(e.target.value))) setP(prev=>({...prev, stock:0})); }} required />
       </label>
       <label>Description
         <textarea name="desc" value={p.desc} onChange={handleChange} />

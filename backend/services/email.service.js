@@ -205,6 +205,8 @@ exports.sendOTPEmail = async (email, userName, ipAddress = null) => {
       sessionId,
       lastSentAt: timestamp,
     });
+    
+    console.log(`✓ OTP stored for ${email}: ${otp} (Session: ${sessionId})`);
 
     // Create email transporter
     const transporter = createTransporter();
@@ -352,11 +354,15 @@ exports.sendOTPEmail = async (email, userName, ipAddress = null) => {
  */
 exports.verifyOTP = async (email, otp, sessionId = null) => {
   try {
+    console.log(`🔍 Verifying OTP for ${email}: ${otp} (Session: ${sessionId})`);
     const otpData = otpStore.get(email);
 
     if (!otpData) {
+      console.error(`❌ No OTP found in store for ${email}`);
       throw new Error("No verification code found. Please request a new code.");
     }
+    
+    console.log(`✓ OTP found in store: ${otpData.otp} (Session: ${otpData.sessionId}, Attempts: ${otpData.attempts})`);
 
     // Check expiration
     if (Date.now() > otpData.expiresAt) {

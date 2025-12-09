@@ -2,21 +2,15 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
 import './Login.scss';
-import SellerDashboard from '../SellerDashboard/SellerDashboard';
-import BuyerDashboard from '../BuyerDashboard/BuyerDashboard';
-import AdminDashboard from '../AdminDashboard/AdminDashboard';
 
-const Login = ({ onSwitchToSignup }) => {
+const Login = ({ onSwitchToSignup, onLoginSuccess }) => {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
-  const [userRole, setUserRole] = useState('');
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userName, setUserName] = useState('');
 
   // NEW: Email OTP state
   const [requiresOTP, setRequiresOTP] = useState(false);
@@ -104,33 +98,40 @@ const Login = ({ onSwitchToSignup }) => {
       // Fallback for backward compatibility (if OTP not yet implemented)
       if (response.data.token) {
         localStorage.setItem('authToken', response.data.token);
+        
+        // Persist user data
+        try {
+          const emailForStore = response.data?.user?.email || formData.email;
+          const name = response.data?.user?.name || response.data?.user?.email || formData.email;
+          if (emailForStore) localStorage.setItem('userEmail', emailForStore);
+          if (name) localStorage.setItem('userName', name);
+        } catch (e) {
+          // ignore storage errors
+        }
       }
-
-      // Determine user display name (prefer provided name, then email)
-      const name = response.data?.user?.name || response.data?.user?.email || formData.email;
-      setUserName(name);
-      // persist email/name for other components (used by admin fallback greeting)
-      try {
-        const emailForStore = response.data?.user?.email || formData.email;
-        if (emailForStore) localStorage.setItem('userEmail', emailForStore);
-        if (name) localStorage.setItem('userName', name);
-      } catch (e) {
-        // ignore storage errors
-      }
-      // determine role from server response
-      const resolvedRole = response.data?.user?.role;
-      setUserRole(resolvedRole);
-      setIsLoggedIn(true);
 
       setMessage({
         type: 'success',
-        text: response.data.message || 'Login successful!'
+        text: response.data.message || 'Login successful! Redirecting...'
       });
 
       // Reset form after using formData
       setFormData({ email: '', password: '' });
 
       console.log('Login successful:', response.data);
+
+      // Navigate to dashboard after a short delay
+      setTimeout(() => {
+        if (onLoginSuccess) {
+          console.log('Calling onLoginSuccess callback');
+          onLoginSuccess();
+        } else {
+          console.warn('onLoginSuccess callback not provided - using fallback navigation');
+          // Fallback navigation
+          window.history.pushState({}, '', '/dashboard');
+          window.location.reload();
+        }
+      }, 1000);
 
     } catch (error) {
       console.error('Login error details:', {
@@ -188,30 +189,23 @@ const Login = ({ onSwitchToSignup }) => {
         sessionId: sessionId
       });
 
-      // Store token
+      // Store token and user data
       if (response.data.token) {
         localStorage.setItem('authToken', response.data.token);
+        
+        try {
+          const emailForStore = response.data?.user?.email || formData.email;
+          const name = response.data?.user?.name || response.data?.user?.email || formData.email;
+          if (emailForStore) localStorage.setItem('userEmail', emailForStore);
+          if (name) localStorage.setItem('userName', name);
+        } catch (e) {
+          // ignore storage errors
+        }
       }
-
-      // Set user data
-      const name = response.data?.user?.name || response.data?.user?.email || formData.email;
-      setUserName(name);
-
-      try {
-        const emailForStore = response.data?.user?.email || formData.email;
-        if (emailForStore) localStorage.setItem('userEmail', emailForStore);
-        if (name) localStorage.setItem('userName', name);
-      } catch (e) {
-        // ignore storage errors
-      }
-
-      const resolvedRole = response.data?.user?.role;
-      setUserRole(resolvedRole);
-      setIsLoggedIn(true);
 
       setMessage({
         type: 'success',
-        text: 'Login successful!'
+        text: 'Login successful! Redirecting...'
       });
 
       // Reset form and OTP state
@@ -219,6 +213,19 @@ const Login = ({ onSwitchToSignup }) => {
       setOtpCode('');
       setRequiresOTP(false);
       setSessionId('');
+
+      // Navigate to dashboard after a short delay
+      setTimeout(() => {
+        if (onLoginSuccess) {
+          console.log('Calling onLoginSuccess callback');
+          onLoginSuccess();
+        } else {
+          console.warn('onLoginSuccess callback not provided - using fallback navigation');
+          // Fallback navigation
+          window.history.pushState({}, '', '/dashboard');
+          window.location.reload();
+        }
+      }, 1000);
 
     } catch (error) {
       let errorMessage = 'Invalid verification code. Please try again.';
@@ -338,81 +345,10 @@ const Login = ({ onSwitchToSignup }) => {
     img.src = '/interface-ecommerce.png';
   }, []);
 
-  // Set page title depending on current view and user role
+  // Set page title
   useEffect(() => {
-    if (isLoggedIn) {
-      // choose role-specific dashboard title
-      if (userRole === 'admin') {
-        document.title = 'page dashboard-admin-BKH';
-      } else if (userRole === 'buyer') {
-        document.title = 'page dashboard-acheteur-BKH';
-      } else if (userRole === 'seller') {
-        document.title = 'page dashboard-vendeur-BKH';
-      } else {
-        document.title = 'page dashboard-BKH';
-      }
-    } else {
-      document.title = 'page connexion-BKH';
-    }
-  }, [isLoggedIn, userRole]);
-
-  if (isLoggedIn) {
-    const resolvedRole = userRole;
-    if (resolvedRole === 'seller') {
-      return (
-        <div style={{ paddingTop: 20 }}>
-          <SellerDashboard userName={userName || 'Vendeur'} />
-        </div>
-      );
-    }
-
-    if (resolvedRole === 'buyer') {
-      return (
-        <div style={{ paddingTop: 20 }}>
-          <BuyerDashboard userName={userName || 'Acheteur'} />
-        </div>
-      );
-    }
-
-    if (resolvedRole === 'admin') {
-      return (
-        <div style={{ paddingTop: 20 }}>
-          <AdminDashboard userName={userName || 'Administrateur'} />
-        </div>
-      );
-    }
-
-    const welcomeClass = hasHeroImage ? 'welcome-screen has-image' : 'welcome-screen';
-    const heroStyle = hasHeroImage ? { backgroundImage: "url('/interface-ecommerce.png')" } : undefined;
-    const containerStyle = hasHeroImage ? { backgroundImage: "url('/interface-ecommerce.png')", backgroundSize: 'cover', backgroundPosition: 'center' } : undefined;
-
-    return (
-      <div className="login-container" style={containerStyle}>
-        <div className={welcomeClass} style={heroStyle}>
-          {/* professional logout placed top-right */}
-          <button
-            className="logout-top"
-            onClick={() => { localStorage.removeItem('authToken'); localStorage.removeItem('userEmail'); localStorage.removeItem('userName'); setIsLoggedIn(false); setUserName(''); }}
-            aria-label="Se déconnecter"
-          >
-            Se déconnecter
-          </button>
-
-          <div className="welcome-hero-inner">
-            <div className="welcome-card">
-              <h1 className="welcome-title">Bonjour {userName}</h1>
-              <p className="welcome-sub">Découvrons nos sélections et promotions quotidiennes!</p>
-            </div>
-          </div>
-
-          <div className="hero-overlays" aria-hidden="true">
-            <svg className="icon shop" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 2L3 6v13a2 2 0 002 2h14a2 2 0 002-2V6l-3-4H6z" stroke="#fff" strokeWidth="1.2" /></svg>
-            <svg className="icon cart" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 6h15l-1.5 9h-12L6 6z" stroke="#fff" strokeWidth="1.2" /></svg>
-          </div>
-        </div>
-      </div>
-    );
-  }
+    document.title = 'page connexion-BKH';
+  }, []);
 
   return (
     <div className="login-container">

@@ -1,0 +1,57 @@
+[
+  {
+    "id": "1764766374261",
+    "name": "err",
+    "price": 100,
+    "stock": 0,
+    "desc": "DRF",
+    "sellerId": 9,
+    "sellerName": "ninkopvp@gmail.com",
+    "createdAt": "2025-12-03T12:52:54.261Z",
+    "updatedAt": "2025-12-03T12:54:00.722Z"
+  },
+  {
+    "id": "1764766389279",
+    "name": "zss",
+    "price": 414,
+    "stock": 139,
+    "desc": "zszsz",
+    "sellerId": 9,
+    "sellerName": "ninkopvp@gmail.com",
+    "createdAt": "2025-12-03T12:53:09.279Z",
+    "updatedAt": "2025-12-04T21:36:20.488Z"
+  },
+  {
+    "id": "1764766832969",
+    "name": "AAA",
+    "price": 1000,
+    "stock": 10000,
+    "desc": ";,e",
+    "sellerId": 9,
+    "sellerName": "ninkopvp@gmail.com",
+    "createdAt": "2025-12-03T13:00:32.969Z",
+    "updatedAt": "2025-12-03T13:00:32.969Z"
+  },
+  {
+    "id": "1764767926679",
+    "name": "zzzsz",
+    "price": 23,
+    "stock": 223,
+    "desc": "",
+    "sellerId": 9,
+    "sellerName": "ninkopvp@gmail.com",
+    "createdAt": "2025-12-03T13:18:46.680Z",
+    "updatedAt": "2025-12-03T13:18:46.680Z"
+  },
+  {
+    "id": "1764768837432",
+    "name": "AAAA",
+    "price": 121,
+    "stock": 121,
+    "desc": "ASA",
+    "sellerId": 9,
+    "sellerName": "ninkopvp@gmail.com",
+    "createdAt": "2025-12-03T13:33:57.432Z",
+    "updatedAt": "2025-12-03T13:33:57.432Z"
+  }
+]
