@@ -42,7 +42,7 @@ export async function getMyProducts(token) {
     );
 
     console.log("📥 [Products API] Mes produits:", response.data);
-    return { data: response.data.data || [] };
+    return response.data.data || [];
   } catch (error) {
     console.error(
       "❌ [Products API] Erreur récupération mes produits:",

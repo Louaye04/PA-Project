@@ -1,49 +1,48 @@
 const authService = require("../services/auth.service");
 
+const extractToken = (req) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    return authHeader.split(" ")[1];
+  }
+
+  if (req.query && req.query.token) {
+    return req.query.token;
+  }
+
+  return null;
+};
+
+const requireToken = (token, res) => {
+  if (!token) {
+    res.status(401).json({ error: "No token provided. Authorization denied." });
+    return null;
+  }
+  return token;
+};
+
+const buildUserRoles = (decoded) => {
+  if (decoded.roles && Array.isArray(decoded.roles)) {
+    return decoded.roles;
+  }
+  if (decoded.role) {
+    return [decoded.role];
+  }
+  return [];
+};
+
 /**
  * Authentication Middleware
  * Protects routes by verifying JWT token
  */
 exports.authenticate = async (req, res, next) => {
   try {
-<<<<<<< HEAD
-    let token = null;
-    
-    // Get token from header (priorité)
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.split(' ')[1];
-    }
-    
-    // Si pas de header, essayer query param (pour SSE)
-    if (!token && req.query.token) {
-      token = req.query.token;
-    }
-    
-    if (!token) {
-      return res.status(401).json({ 
-        error: 'No token provided. Authorization denied.' 
-      });
-    }
+    const token = requireToken(extractToken(req), res);
+    if (!token) return;
 
-=======
-    // Get token from header
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({
-        error: "No token provided. Authorization denied.",
-      });
-    }
-
-    const token = authHeader.split(" ")[1];
-
->>>>>>> 759a47eb324414a1b039db0442e8cb1cc0f42c2e
-    // Verify token
     const decoded = authService.verifyToken(token);
-
-    // Attach user info to request
     req.user = decoded;
+    req.userRoles = buildUserRoles(decoded);
 
     next();
   } catch (error) {
@@ -65,7 +64,9 @@ exports.authorize = (...roles) => {
       });
     }
 
-    if (!roles.includes(req.user.role)) {
+    const hasRequiredRole = roles.some((role) => req.userRoles.includes(role));
+
+    if (!hasRequiredRole) {
       return res.status(403).json({
         error: "Access denied. Insufficient permissions.",
       });
@@ -76,44 +77,26 @@ exports.authorize = (...roles) => {
 };
 
 /**
-<<<<<<< HEAD
- * Verify Token Middleware - extrait l'userId du token JWT
+ * Verify Token Middleware - extracts user info from JWT
  */
 exports.verifyToken = async (req, res, next) => {
   try {
-    let token = null;
-    
-    // Get token from header ou query param
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.split(' ')[1];
-    } else if (req.query.token) {
-      token = req.query.token;
-    }
-    
-    if (!token) {
-      return res.status(401).json({ 
-        error: 'No token provided' 
-      });
-    }
+    const token = requireToken(extractToken(req), res);
+    if (!token) return;
 
-    // Verify token et extraire userId
     const decoded = authService.verifyToken(token);
     req.userId = decoded.id;
     req.userEmail = decoded.email;
     req.userRole = decoded.role;
-    
+    req.userRoles = buildUserRoles(decoded);
+
     next();
   } catch (error) {
-    return res.status(401).json({ 
-      error: 'Invalid token' 
+    return res.status(401).json({
+      error: "Invalid token",
     });
   }
-=======
- * Verify JWT Token Middleware
- * Alternative name for authenticate
- */
-exports.verifyToken = exports.authenticate;
+};
 
 /**
  * Admin-only Middleware
@@ -126,7 +109,7 @@ exports.requireAdmin = (req, res, next) => {
     });
   }
 
-  const userRoles = req.user.roles || (req.user.role ? [req.user.role] : []);
+  const userRoles = req.userRoles || buildUserRoles(req.user);
 
   if (!userRoles.includes("admin")) {
     return res.status(403).json({
@@ -135,5 +118,4 @@ exports.requireAdmin = (req, res, next) => {
   }
 
   next();
->>>>>>> 759a47eb324414a1b039db0442e8cb1cc0f42c2e
 };

@@ -4,11 +4,8 @@ import Logo from '../Logo/Logo';
 import SecureChat from '../SecureChat/SecureChat';
 import { getMyProducts, createProduct, updateProduct, deleteProduct } from '../../utils/product-api';
 import { getMyOrders, updateOrderStatus } from '../../utils/order-api';
-<<<<<<< HEAD
 import { connectWebhook, disconnectWebhook, onWebhookEvent } from '../../utils/webhook-client';
-=======
 import { useToast } from '../../contexts/ToastContext';
->>>>>>> 759a47eb324414a1b039db0442e8cb1cc0f42c2e
 
 const SellerDashboard = ({ userName }) => {
   const toast = useToast();
@@ -250,21 +247,11 @@ const SellerDashboard = ({ userName }) => {
   const totalRevenue = orders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + o.totalPrice, 0);
 
   return (
-<<<<<<< HEAD
-    <div className="seller-dashboard" style={bgStyle}>
-      <div className="seller-content">
-      <header className="seller-header">
-        <div className="header-left">
-          <div className="app-header-logo"><Logo size={48} /></div>
-          <h2>Tableau de bord vendeur</h2>
-          {autoRefreshing && <span className="refresh-indicator">🔄 Actualisation...</span>}
-=======
     <div className="seller-dashboard-root">
       <aside className="seller-sidebar">
         <div className="sidebar-header">
           <Logo />
           <h3>Vendeur</h3>
->>>>>>> 759a47eb324414a1b039db0442e8cb1cc0f42c2e
         </div>
         <nav className="sidebar-nav">
           <button className={currentTab === 'products' ? 'active' : ''} onClick={() => setCurrentTab('products')}>
@@ -560,48 +547,6 @@ const SellerDashboard = ({ userName }) => {
         </div>
       )}
 
-<<<<<<< HEAD
-      {/* Secure Chat Modal */}
-      {secureChatOpen && chatOrder && (() => {
-        // Décoder le JWT pour obtenir l'ID utilisateur
-        const token = localStorage.getItem('authToken') || '';
-        const userEmail = localStorage.getItem('userEmail') || 'seller@example.com';
-        let currentUserId = userEmail;
-        
-        try {
-          if (token) {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            currentUserId = payload.id || payload.email;
-          }
-        } catch (e) {
-          console.error('Erreur décodage token:', e);
-        }
-        
-        return (
-          <SecureChat
-            currentUser={{
-              id: currentUserId,
-              email: userEmail,
-              name: userName || 'Vendeur',
-              role: 'seller'
-            }}
-            otherUser={{
-              id: chatOrder.buyerId,
-              email: chatOrder.buyerId,
-              name: chatOrder.buyerName,
-              role: 'buyer'
-            }}
-            productId={chatOrder.productId.toString()}
-            token={token}
-            onClose={() => {
-              setSecureChatOpen(false);
-              setChatOrder(null);
-            }}
-          />
-        );
-      })()}
-      </div>
-=======
       {secureChatOpen && chatOrder && (
         <SecureChat
           currentUser={{
@@ -624,7 +569,6 @@ const SellerDashboard = ({ userName }) => {
           }}
         />
       )}
->>>>>>> 759a47eb324414a1b039db0442e8cb1cc0f42c2e
     </div>
   );
 };
@@ -652,17 +596,10 @@ function ProductForm({ product: initial, onSave, onCancel }) {
         <input name="name" value={p.name} onChange={handleChange} required />
       </label>
       <label>Prix (DA)
-<<<<<<< HEAD
-        <input name="price" type="number" value={p.price} onChange={handleChange} required />
-      </label>
-      <label>Stock
-        <input name="stock" type="number" value={p.stock} onChange={handleChange} required />
-=======
         <input name="price" type="number" inputMode="decimal" step="0.01" min="0" value={p.price} onChange={handleChange} required />
       </label>
       <label>Stock
         <input name="stock" type="number" inputMode="numeric" step="1" min="0" value={p.stock} onChange={handleChange} required />
->>>>>>> 759a47eb324414a1b039db0442e8cb1cc0f42c2e
       </label>
       <label>Description
         <textarea name="desc" value={p.desc} onChange={handleChange} />

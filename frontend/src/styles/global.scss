@@ -24,25 +24,6 @@ body {
 
 // CSS Variables for theming - Modern Dark Nike-like theme
 :root {
-<<<<<<< HEAD
-  --primary-color: #667eea;
-  --primary-dark: #5568d3;
-  --secondary-color: #764ba2;
-  --success-color: #10b981;
-  --error-color: #ef4444;
-  --text-primary: #1f2937;
-  --text-secondary: #6b7280;
-  --border-color: #e5e7eb;
-  --background-light: #f9fafb;
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  --transition-base: all 0.3s ease;
-}
-
-=======
-  /* Modern dark palette: black + white with accent */
   --primary-color: #000000;
   --primary-dark: #1a1a1a;
   --accent-color: #ffffff;
@@ -154,11 +135,11 @@ body {
 .transition {
   transition: var(--transition-base);
 }
+
 .focus-ring:focus {
   outline: 3px solid rgba(107, 76, 255, 0.12);
 }
 
->>>>>>> 759a47eb324414a1b039db0442e8cb1cc0f42c2e
 // Utility Classes
 .sr-only {
   position: absolute;

@@ -4,11 +4,8 @@ import Logo from '../Logo/Logo';
 import SecureChat from '../SecureChat/SecureChat';
 import { getAllProducts } from '../../utils/product-api';
 import { createOrder, getMyOrders } from '../../utils/order-api';
-<<<<<<< HEAD
 import { connectWebhook, disconnectWebhook, onWebhookEvent } from '../../utils/webhook-client';
-=======
 import { useToast } from '../../contexts/ToastContext';
->>>>>>> 759a47eb324414a1b039db0442e8cb1cc0f42c2e
 
 const BuyerDashboard = ({ userName }) => {
   const toast = useToast();

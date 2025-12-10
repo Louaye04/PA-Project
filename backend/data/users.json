@@ -50,5 +50,16 @@
     "totpProvisioningUri": "otpauth://totp/BKH%20Shop%20(hindkahla29%40gmail.com)?secret=G5TSCQJUK5DV4JL2GNGSMODLNAQSK6TD",
     "birthCity": "Alger",
     "createdAt": "2025-12-10T00:35:06.164Z"
+  },
+  {
+    "id": 6,
+    "email": "khobziabderrahmane@gmail.com",
+    "password": "$2a$10$cMLiNHlhB5dCX2owHv.0xuP0t3cdV6z/jTLkIcvd7Y78ek.MML95y",
+    "name": "khobzi Abderrahmane Amine",
+    "roles": [
+      "buyer"
+    ],
+    "role": "buyer",
+    "createdAt": "2025-12-10T01:00:06.459Z"
   }
 ]

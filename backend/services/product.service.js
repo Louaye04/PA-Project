@@ -1,11 +1,6 @@
-<<<<<<< HEAD
-const fs = require('fs');
-const path = require('path');
-const webhookService = require('./webhook.service');
-=======
 const fs = require("fs");
 const path = require("path");
->>>>>>> 759a47eb324414a1b039db0442e8cb1cc0f42c2e
+const webhookService = require("./webhook.service");
 
 const PRODUCTS_FILE = path.join(__dirname, "../data/products.json");
 
@@ -67,20 +62,12 @@ exports.createProduct = (productData) => {
 
   products.push(newProduct);
   writeProducts(products);
-<<<<<<< HEAD
-  
-  console.log('✅ [Products] Produit créé:', newProduct.id, newProduct.name);
-  
-  // Notifier tous les acheteurs qu'un nouveau produit est disponible
-  webhookService.notifyAllBuyers('product-created', {
-    product: newProduct
-  });
-  
-=======
 
   console.log("✅ [Products] Produit créé:", newProduct.id, newProduct.name);
 
->>>>>>> 759a47eb324414a1b039db0442e8cb1cc0f42c2e
+  webhookService.notifyAllBuyers("product-created", {
+    product: newProduct,
+  });
   return newProduct;
 };
 
@@ -113,20 +100,12 @@ exports.updateProduct = (productId, sellerId, updates) => {
   products[index].updatedAt = new Date().toISOString();
 
   writeProducts(products);
-<<<<<<< HEAD
-  
-  console.log('✅ [Products] Produit mis à jour:', productId);
-  
-  // Notifier tous les utilisateurs de la mise à jour
-  webhookService.notifyAll('product-updated', {
-    product: products[index]
-  });
-  
-=======
 
   console.log("✅ [Products] Produit mis à jour:", productId);
 
->>>>>>> 759a47eb324414a1b039db0442e8cb1cc0f42c2e
+  webhookService.notifyAll("product-updated", {
+    product: products[index],
+  });
   return products[index];
 };
 
@@ -152,20 +131,12 @@ exports.deleteProduct = (productId, sellerId) => {
 
   const deletedProduct = products.splice(index, 1)[0];
   writeProducts(products);
-<<<<<<< HEAD
-  
-  console.log('🗑️ [Products] Produit supprimé:', productId);
-  
-  // Notifier tous les utilisateurs de la suppression
-  webhookService.notifyAll('product-deleted', {
-    productId: productId
-  });
-  
-=======
 
   console.log("🗑️ [Products] Produit supprimé:", productId);
 
->>>>>>> 759a47eb324414a1b039db0442e8cb1cc0f42c2e
+  webhookService.notifyAll("product-deleted", {
+    productId: productId,
+  });
   return deletedProduct;
 };
 
