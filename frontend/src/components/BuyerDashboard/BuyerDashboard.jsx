@@ -4,6 +4,7 @@ import Logo from '../Logo/Logo';
 import SecureChat from '../SecureChat/SecureChat';
 import { getAllProducts } from '../../utils/product-api';
 import { createOrder, getMyOrders } from '../../utils/order-api';
+import { connectWebhook, disconnectWebhook, onWebhookEvent } from '../../utils/webhook-client';
 
 const BuyerDashboard = ({ userName }) => {
   const [products, setProducts] = useState([]);
@@ -34,11 +35,17 @@ const BuyerDashboard = ({ userName }) => {
   const [cartVisible, setCartVisible] = useState(false);
   const [secureChatOpen, setSecureChatOpen] = useState(false);
   const [chatProduct, setChatProduct] = useState(null);
+  const [autoRefreshing, setAutoRefreshing] = useState(false);
 
-  const loadData = async () => {
+  const loadData = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      } else {
+        setAutoRefreshing(true);
+      }
       setError(null);
+      
       const [productsData, ordersData] = await Promise.all([
         getAllProducts(),
         getMyOrders()
@@ -46,14 +53,61 @@ const BuyerDashboard = ({ userName }) => {
       setProducts(productsData);
       setOrders(ordersData);
     } catch (err) {
-      setError(err.response?.data?.error || err.message);
+      if (!silent) {
+        setError(err.response?.data?.error || err.message);
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      } else {
+        setAutoRefreshing(false);
+      }
     }
   };
 
   useEffect(() => {
     loadData();
+    
+    // Connecter au webhook pour les notifications en temps réel
+    connectWebhook();
+    
+    // S'abonner aux événements
+    const unsubscribeProductCreated = onWebhookEvent('product-created', (data) => {
+      console.log('🛍️ [BuyerDashboard] Nouveau produit disponible:', data.product.name);
+      setAutoRefreshing(true);
+      loadData(true); // Recharger les données silencieusement
+      setTimeout(() => setAutoRefreshing(false), 1000);
+    });
+    
+    const unsubscribeProductUpdated = onWebhookEvent('product-updated', (data) => {
+      console.log('🛍️ [BuyerDashboard] Produit mis à jour:', data.product.name);
+      setAutoRefreshing(true);
+      loadData(true);
+      setTimeout(() => setAutoRefreshing(false), 1000);
+    });
+    
+    const unsubscribeProductDeleted = onWebhookEvent('product-deleted', (data) => {
+      console.log('🛍️ [BuyerDashboard] Produit supprimé:', data.productId);
+      setAutoRefreshing(true);
+      loadData(true);
+      setTimeout(() => setAutoRefreshing(false), 1000);
+    });
+    
+    const unsubscribeOrderUpdated = onWebhookEvent('order-updated', (data) => {
+      console.log('📦 [BuyerDashboard] Commande mise à jour:', data.order);
+      setAutoRefreshing(true);
+      loadData(true);
+      setTimeout(() => setAutoRefreshing(false), 1000);
+    });
+    
+    // Cleanup
+    return () => {
+      unsubscribeProductCreated();
+      unsubscribeProductUpdated();
+      unsubscribeProductDeleted();
+      unsubscribeOrderUpdated();
+      disconnectWebhook();
+    };
   }, []);
 
   useEffect(() => {
@@ -115,6 +169,7 @@ const BuyerDashboard = ({ userName }) => {
         <header className="buyer-topbar">
           <div className="search-wrapper">
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher des produits, ex: Chaussures" />
+            {autoRefreshing && <span className="refresh-indicator">🔄</span>}
           </div>
           <div className="top-actions">
             <div className="greeting">Bonjour {userName}</div>
@@ -342,28 +397,44 @@ const BuyerDashboard = ({ userName }) => {
       )}
 
       {/* Secure Chat Modal */}
-      {secureChatOpen && chatProduct && (
-        <SecureChat
-          currentUser={{
-            id: localStorage.getItem('userEmail') || 'buyer@example.com',
-            email: localStorage.getItem('userEmail') || 'buyer@example.com',
-            name: userName || 'Acheteur',
-            role: 'buyer'
-          }}
-          otherUser={{
-            id: chatProduct.seller,
-            email: chatProduct.seller,
-            name: chatProduct.seller,
-            role: 'seller'
-          }}
-          productId={chatProduct.id.toString()}
-          token={localStorage.getItem('authToken') || ''}
-          onClose={() => {
-            setSecureChatOpen(false);
-            setChatProduct(null);
-          }}
-        />
-      )}
+      {secureChatOpen && chatProduct && (() => {
+        // Décoder le JWT pour obtenir l'ID utilisateur
+        const token = localStorage.getItem('authToken') || '';
+        const userEmail = localStorage.getItem('userEmail') || 'buyer@example.com';
+        let currentUserId = userEmail;
+        
+        try {
+          if (token) {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            currentUserId = payload.id || payload.email;
+          }
+        } catch (e) {
+          console.error('Erreur décodage token:', e);
+        }
+        
+        return (
+          <SecureChat
+            currentUser={{
+              id: currentUserId,
+              email: userEmail,
+              name: userName || 'Acheteur',
+              role: 'buyer'
+            }}
+            otherUser={{
+              id: chatProduct.sellerId || chatProduct.seller,
+              email: chatProduct.sellerId || chatProduct.seller,
+              name: chatProduct.sellerName || chatProduct.seller,
+              role: 'seller'
+            }}
+            productId={chatProduct.id.toString()}
+            token={token}
+            onClose={() => {
+              setSecureChatOpen(false);
+              setChatProduct(null);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 };

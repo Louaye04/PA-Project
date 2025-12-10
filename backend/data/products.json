@@ -1,57 +1,112 @@
 [
   {
-    "id": "1764766374261",
-    "name": "err",
-    "price": 100,
-    "stock": 0,
-    "desc": "DRF",
-    "sellerId": 9,
-    "sellerName": "ninkopvp@gmail.com",
-    "createdAt": "2025-12-03T12:52:54.261Z",
-    "updatedAt": "2025-12-03T12:54:00.722Z"
-  },
-  {
-    "id": "1764766389279",
-    "name": "zss",
-    "price": 414,
-    "stock": 139,
-    "desc": "zszsz",
-    "sellerId": 9,
-    "sellerName": "ninkopvp@gmail.com",
-    "createdAt": "2025-12-03T12:53:09.279Z",
-    "updatedAt": "2025-12-04T21:36:20.488Z"
-  },
-  {
-    "id": "1764766832969",
-    "name": "AAA",
-    "price": 1000,
-    "stock": 10000,
-    "desc": ";,e",
-    "sellerId": 9,
-    "sellerName": "ninkopvp@gmail.com",
-    "createdAt": "2025-12-03T13:00:32.969Z",
-    "updatedAt": "2025-12-03T13:00:32.969Z"
-  },
-  {
-    "id": "1764767926679",
-    "name": "zzzsz",
-    "price": 23,
-    "stock": 223,
+    "id": "1765312696779",
+    "name": "TEST",
+    "price": 12345,
+    "stock": 2,
     "desc": "",
     "sellerId": 9,
     "sellerName": "ninkopvp@gmail.com",
-    "createdAt": "2025-12-03T13:18:46.680Z",
-    "updatedAt": "2025-12-03T13:18:46.680Z"
+    "createdAt": "2025-12-09T20:38:16.779Z",
+    "updatedAt": "2025-12-09T21:29:29.422Z"
   },
   {
-    "id": "1764768837432",
-    "name": "AAAA",
-    "price": 121,
-    "stock": 121,
-    "desc": "ASA",
+    "id": "1765315861068",
+    "name": "gar",
+    "price": 100000,
+    "stock": 8,
+    "desc": "",
     "sellerId": 9,
     "sellerName": "ninkopvp@gmail.com",
-    "createdAt": "2025-12-03T13:33:57.432Z",
-    "updatedAt": "2025-12-03T13:33:57.432Z"
+    "createdAt": "2025-12-09T21:31:01.068Z",
+    "updatedAt": "2025-12-09T21:33:17.829Z"
+  },
+  {
+    "id": "1765316184595",
+    "name": "testerr",
+    "price": 900,
+    "stock": 7,
+    "desc": "",
+    "sellerId": 9,
+    "sellerName": "ninkopvp@gmail.com",
+    "createdAt": "2025-12-09T21:36:24.595Z",
+    "updatedAt": "2025-12-09T21:41:37.595Z"
+  },
+  {
+    "id": "1765317191729",
+    "name": "poire",
+    "price": 100,
+    "stock": 120,
+    "desc": "",
+    "sellerId": 9,
+    "sellerName": "ninkopvp@gmail.com",
+    "createdAt": "2025-12-09T21:53:11.729Z",
+    "updatedAt": "2025-12-09T22:11:09.386Z"
+  },
+  {
+    "id": "1765319830749",
+    "name": "jouet",
+    "price": 10000,
+    "stock": 97,
+    "desc": "",
+    "sellerId": 9,
+    "sellerName": "ninkopvp@gmail.com",
+    "createdAt": "2025-12-09T22:37:10.749Z",
+    "updatedAt": "2025-12-09T22:41:27.861Z"
+  },
+  {
+    "id": "1765319960778",
+    "name": "zzdzde",
+    "price": 111,
+    "stock": 10,
+    "desc": "",
+    "sellerId": 9,
+    "sellerName": "ninkopvp@gmail.com",
+    "createdAt": "2025-12-09T22:39:20.778Z",
+    "updatedAt": "2025-12-09T22:40:28.256Z"
+  },
+  {
+    "id": "1765321866251",
+    "name": "riyghrjk",
+    "price": 11001010,
+    "stock": 85,
+    "desc": "",
+    "sellerId": 9,
+    "sellerName": "ninkopvp@gmail.com",
+    "createdAt": "2025-12-09T23:11:06.251Z",
+    "updatedAt": "2025-12-10T00:00:20.771Z"
+  },
+  {
+    "id": "1765322085231",
+    "name": "lzkebrvbrvlb",
+    "price": 100,
+    "stock": 96,
+    "desc": "",
+    "sellerId": 9,
+    "sellerName": "ninkopvp@gmail.com",
+    "createdAt": "2025-12-09T23:14:45.231Z",
+    "updatedAt": "2025-12-10T00:14:22.438Z"
+  },
+  {
+    "id": "1765323259769",
+    "name": "rdtfgyhujioklpzjdhge",
+    "price": 10000,
+    "stock": 1,
+    "desc": "",
+    "sellerId": 9,
+    "sellerName": "ninkopvp@gmail.com",
+    "createdAt": "2025-12-09T23:34:19.769Z",
+    "updatedAt": "2025-12-10T00:22:04.299Z"
+  },
+  {
+    "id": "1765325295306",
+    "name": "qzserdgujoierugrevj",
+    "price": 1000000,
+    "stock": 63,
+    "desc": "",
+    "sellerId": 9,
+    "sellerName": "ninkopvp@gmail.com",
+    "createdAt": "2025-12-10T00:08:15.306Z",
+    "updatedAt": "2025-12-10T00:32:05.270Z"
   }
 ]

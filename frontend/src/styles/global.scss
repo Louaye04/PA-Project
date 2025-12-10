@@ -15,40 +15,21 @@ body {
 
 // CSS Variables for theming
 :root {
-  /* Modern palette: soft purple + teal accents */
-  --primary-color: #6b4cff; /* soft violet */
-  --primary-dark: #5a3ce6;
-  --accent-color: #14b8a6; /* teal */
-  --secondary-color: #7c5cff;
+  --primary-color: #667eea;
+  --primary-dark: #5568d3;
+  --secondary-color: #764ba2;
   --success-color: #10b981;
   --error-color: #ef4444;
-  --text-primary: #0f172a;
-  --text-secondary: #606574;
-  --muted: #94a3b8;
-  --border-color: #e6eef6;
-  --background-light: #f7fafc;
-  --surface: #ffffff;
-  --shadow-sm: 0 4px 12px rgba(12,18,30,0.06);
-  --shadow-md: 0 10px 30px rgba(12,18,30,0.09);
-  --shadow-lg: 0 18px 60px rgba(12,18,30,0.12);
-  --transition-base: all 0.22s cubic-bezier(.2,.9,.2,1);
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --border-color: #e5e7eb;
+  --background-light: #f9fafb;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --transition-base: all 0.3s ease;
 }
-
-/* Animations & helpers */
-@keyframes floatUp {
-  from { transform: translateY(6px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-.anim-fade-in { animation: floatUp 260ms var(--transition-base) both; }
-.soft-shadow { box-shadow: var(--shadow-sm); }
-.card { background: var(--surface); border-radius: 12px; box-shadow: var(--shadow-md); transition: var(--transition-base); }
-.btn-primary { background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); color: #fff; border: none; }
-.btn-ghost { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); }
-.rounded { border-radius: 10px; }
-.muted { color: var(--muted); }
-.transition { transition: var(--transition-base); }
-.focus-ring:focus { outline: 3px solid rgba(107,76,255,0.12); }
 
 // Utility Classes
 .sr-only {

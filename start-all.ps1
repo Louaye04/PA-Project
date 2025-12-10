@@ -3,10 +3,12 @@ Write-Host "Starting Full Application Stack..." -ForegroundColor Cyan
 
 # Start backend in background job
 Write-Host "`nStarting Backend Server (Port 5000)..." -ForegroundColor Green
+$backendPath = "$PSScriptRoot\backend"
 $backendJob = Start-Job -ScriptBlock {
-    Set-Location 'f:\ESST_Desktop\M1-S1\SSAD\TP\TP1\backend'
+    param($path)
+    Set-Location $path
     node server.js
-}
+} -ArgumentList $backendPath
 
 Write-Host "Backend server starting (Job ID: $($backendJob.Id))" -ForegroundColor Yellow
 

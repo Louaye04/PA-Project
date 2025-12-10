@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 /**
  * Créer une nouvelle session Diffie-Hellman
@@ -13,7 +13,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api
 export async function createDHSession(sellerId, buyerId, productId, token) {
   try {
     const response = await axios.post(
-      `${API_BASE_URL}/dh/create-session`,
+      `${API_BASE_URL}/api/dh/create-session`,
       { sellerId, buyerId, productId },
       {
         headers: {
@@ -39,7 +39,7 @@ export async function createDHSession(sellerId, buyerId, productId, token) {
 export async function submitSellerPublicKey(sessionId, publicKey, token) {
   try {
     const response = await axios.post(
-      `${API_BASE_URL}/dh/submit-seller-key`,
+      `${API_BASE_URL}/api/dh/submit-seller-key`,
       { sessionId, publicKey },
       {
         headers: {
@@ -65,7 +65,7 @@ export async function submitSellerPublicKey(sessionId, publicKey, token) {
 export async function submitBuyerPublicKey(sessionId, publicKey, token) {
   try {
     const response = await axios.post(
-      `${API_BASE_URL}/dh/submit-buyer-key`,
+      `${API_BASE_URL}/api/dh/submit-buyer-key`,
       { sessionId, publicKey },
       {
         headers: {
@@ -90,7 +90,7 @@ export async function submitBuyerPublicKey(sessionId, publicKey, token) {
 export async function getDHSession(sessionId, token) {
   try {
     const response = await axios.get(
-      `${API_BASE_URL}/dh/session/${sessionId}`,
+      `${API_BASE_URL}/api/dh/session/${sessionId}`,
       {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -114,7 +114,7 @@ export async function getDHSession(sessionId, token) {
 export async function sendEncryptedMessage(sessionId, encryptedData, token) {
   try {
     const response = await axios.post(
-      `${API_BASE_URL}/dh/send-message`,
+      `${API_BASE_URL}/api/dh/send-message`,
       { sessionId, encryptedData },
       {
         headers: {
@@ -139,7 +139,7 @@ export async function sendEncryptedMessage(sessionId, encryptedData, token) {
 export async function getEncryptedMessages(sessionId, token) {
   try {
     const response = await axios.get(
-      `${API_BASE_URL}/dh/messages/${sessionId}`,
+      `${API_BASE_URL}/api/dh/messages/${sessionId}`,
       {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -161,7 +161,7 @@ export async function getEncryptedMessages(sessionId, token) {
 export async function getMySessions(token) {
   try {
     const response = await axios.get(
-      `${API_BASE_URL}/dh/my-sessions`,
+      `${API_BASE_URL}/api/dh/my-sessions`,
       {
         headers: {
           'Authorization': `Bearer ${token}`

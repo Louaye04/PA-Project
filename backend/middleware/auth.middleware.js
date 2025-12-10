@@ -6,16 +6,24 @@ const authService = require('../services/auth.service');
  */
 exports.authenticate = async (req, res, next) => {
   try {
-    // Get token from header
-    const authHeader = req.headers.authorization;
+    let token = null;
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // Get token from header (priorité)
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    }
+    
+    // Si pas de header, essayer query param (pour SSE)
+    if (!token && req.query.token) {
+      token = req.query.token;
+    }
+    
+    if (!token) {
       return res.status(401).json({ 
         error: 'No token provided. Authorization denied.' 
       });
     }
-
-    const token = authHeader.split(' ')[1];
 
     // Verify token
     const decoded = authService.verifyToken(token);
@@ -51,4 +59,39 @@ exports.authorize = (...roles) => {
 
     next();
   };
+};
+
+/**
+ * Verify Token Middleware - extrait l'userId du token JWT
+ */
+exports.verifyToken = async (req, res, next) => {
+  try {
+    let token = null;
+    
+    // Get token from header ou query param
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.query.token) {
+      token = req.query.token;
+    }
+    
+    if (!token) {
+      return res.status(401).json({ 
+        error: 'No token provided' 
+      });
+    }
+
+    // Verify token et extraire userId
+    const decoded = authService.verifyToken(token);
+    req.userId = decoded.id;
+    req.userEmail = decoded.email;
+    req.userRole = decoded.role;
+    
+    next();
+  } catch (error) {
+    return res.status(401).json({ 
+      error: 'Invalid token' 
+    });
+  }
 };

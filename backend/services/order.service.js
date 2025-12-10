@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const webhookService = require('./webhook.service');
 
 const ORDERS_FILE = path.join(__dirname, '../data/orders.json');
 
@@ -73,6 +74,11 @@ exports.createOrder = (orderData) => {
   
   console.log('✅ [Orders] Commande créée:', newOrder.id);
   
+  // Notifier le vendeur de la nouvelle commande
+  webhookService.notifyUser(orderData.sellerId, 'order-created', {
+    order: newOrder
+  });
+  
   return newOrder;
 };
 
@@ -109,6 +115,14 @@ exports.updateOrderStatus = (orderId, userId, newStatus) => {
   writeOrders(orders);
   
   console.log('✅ [Orders] Statut de commande mis à jour:', orderId, '→', newStatus);
+  
+  // Notifier l'acheteur et le vendeur du changement de statut
+  webhookService.notifyUser(order.buyerId, 'order-updated', {
+    order: orders[index]
+  });
+  webhookService.notifyUser(order.sellerId, 'order-updated', {
+    order: orders[index]
+  });
   
   return orders[index];
 };

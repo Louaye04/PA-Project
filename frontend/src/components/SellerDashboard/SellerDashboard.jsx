@@ -4,6 +4,7 @@ import Logo from '../Logo/Logo';
 import SecureChat from '../SecureChat/SecureChat';
 import { getMyProducts, createProduct, updateProduct, deleteProduct } from '../../utils/product-api';
 import { getMyOrders, updateOrderStatus } from '../../utils/order-api';
+import { connectWebhook, disconnectWebhook, onWebhookEvent } from '../../utils/webhook-client';
 
 const SellerDashboard = ({ userName }) => {
   const [products, setProducts] = useState([]);
@@ -16,15 +17,54 @@ const SellerDashboard = ({ userName }) => {
   const [ordersFilter, setOrdersFilter] = useState('Toutes');
   const [secureChatOpen, setSecureChatOpen] = useState(false);
   const [chatOrder, setChatOrder] = useState(null);
+  const [autoRefreshing, setAutoRefreshing] = useState(false);
 
   // Charger les produits et commandes au montage
   useEffect(() => {
     loadData();
+    
+    // Connecter au webhook pour les notifications en temps réel
+    connectWebhook();
+    
+    // S'abonner aux événements
+    const unsubscribeOrderCreated = onWebhookEvent('order-created', (data) => {
+      console.log('📦 [SellerDashboard] Nouvelle commande reçue:', data.order);
+      setAutoRefreshing(true);
+      loadData(true); // Recharger les données silencieusement
+      setTimeout(() => setAutoRefreshing(false), 1000);
+    });
+    
+    const unsubscribeOrderUpdated = onWebhookEvent('order-updated', (data) => {
+      console.log('📦 [SellerDashboard] Commande mise à jour:', data.order);
+      setAutoRefreshing(true);
+      loadData(true);
+      setTimeout(() => setAutoRefreshing(false), 1000);
+    });
+    
+    const unsubscribeDHSessionCreated = onWebhookEvent('dh-session-created', (data) => {
+      console.log('🔐 [SellerDashboard] Nouvelle session DH:', data.sessionId);
+      setAutoRefreshing(true);
+      loadData(true);
+      setTimeout(() => setAutoRefreshing(false), 1000);
+    });
+    
+    // Cleanup
+    return () => {
+      unsubscribeOrderCreated();
+      unsubscribeOrderUpdated();
+      unsubscribeDHSessionCreated();
+      disconnectWebhook();
+    };
   }, []);
 
-  const loadData = async () => {
+  const loadData = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      } else {
+        setAutoRefreshing(true);
+      }
+      
       const token = localStorage.getItem('authToken');
       
       if (!token) {
@@ -32,19 +72,25 @@ const SellerDashboard = ({ userName }) => {
         return;
       }
 
-      const [productsRes, ordersRes] = await Promise.all([
-        getMyProducts(token),
-        getMyOrders(token)
+      const [productsData, ordersData] = await Promise.all([
+        getMyProducts(),
+        getMyOrders()
       ]);
 
-      setProducts(productsRes.data || []);
-      setOrders(ordersRes.data || []);
+      setProducts(productsData || []);
+      setOrders(ordersData || []);
       setError(null);
     } catch (err) {
       console.error('Erreur chargement données:', err);
-      setError(err.response?.data?.error || 'Erreur de chargement');
+      if (!silent) {
+        setError(err.response?.data?.error || 'Erreur de chargement');
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      } else {
+        setAutoRefreshing(false);
+      }
     }
   };
 
@@ -150,6 +196,7 @@ const SellerDashboard = ({ userName }) => {
         <div className="header-left">
           <div className="app-header-logo"><Logo size={48} /></div>
           <h2>Tableau de bord vendeur</h2>
+          {autoRefreshing && <span className="refresh-indicator">🔄 Actualisation...</span>}
         </div>
         <div className="seller-actions">
           <button className="btn" onClick={openAddModal}>Ajouter un produit</button>
@@ -271,28 +318,44 @@ const SellerDashboard = ({ userName }) => {
       )}
 
       {/* Secure Chat Modal */}
-      {secureChatOpen && chatOrder && (
-        <SecureChat
-          currentUser={{
-            id: localStorage.getItem('userEmail') || 'seller@example.com',
-            email: localStorage.getItem('userEmail') || 'seller@example.com',
-            name: userName || 'Vendeur',
-            role: 'seller'
-          }}
-          otherUser={{
-            id: chatOrder.buyerId,
-            email: chatOrder.buyerId,
-            name: chatOrder.buyerName,
-            role: 'buyer'
-          }}
-          productId={chatOrder.productId.toString()}
-          token={localStorage.getItem('authToken') || ''}
-          onClose={() => {
-            setSecureChatOpen(false);
-            setChatOrder(null);
-          }}
-        />
-      )}
+      {secureChatOpen && chatOrder && (() => {
+        // Décoder le JWT pour obtenir l'ID utilisateur
+        const token = localStorage.getItem('authToken') || '';
+        const userEmail = localStorage.getItem('userEmail') || 'seller@example.com';
+        let currentUserId = userEmail;
+        
+        try {
+          if (token) {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            currentUserId = payload.id || payload.email;
+          }
+        } catch (e) {
+          console.error('Erreur décodage token:', e);
+        }
+        
+        return (
+          <SecureChat
+            currentUser={{
+              id: currentUserId,
+              email: userEmail,
+              name: userName || 'Vendeur',
+              role: 'seller'
+            }}
+            otherUser={{
+              id: chatOrder.buyerId,
+              email: chatOrder.buyerId,
+              name: chatOrder.buyerName,
+              role: 'buyer'
+            }}
+            productId={chatOrder.productId.toString()}
+            token={token}
+            onClose={() => {
+              setSecureChatOpen(false);
+              setChatOrder(null);
+            }}
+          />
+        );
+      })()}
       </div>
     </div>
   );
@@ -314,10 +377,10 @@ function ProductForm({ product: initial, onSave, onCancel }) {
         <input name="name" value={p.name} onChange={handleChange} required />
       </label>
       <label>Prix (DA)
-        <input name="price" type="number" inputMode="decimal" step="0.01" min="0" pattern="[0-9]+([\.][0-9]+)?" value={p.price} onChange={handleChange} onBlur={(e)=>{ if(e.target.value==='') setP(prev=>({...prev, price:0})); }} required />
+        <input name="price" type="number" value={p.price} onChange={handleChange} required />
       </label>
       <label>Stock
-        <input name="stock" type="number" inputMode="numeric" step="1" min="0" pattern="[0-9]*" value={p.stock} onChange={handleChange} onBlur={(e)=>{ if(e.target.value==='' || isNaN(Number(e.target.value))) setP(prev=>({...prev, stock:0})); }} required />
+        <input name="stock" type="number" value={p.stock} onChange={handleChange} required />
       </label>
       <label>Description
         <textarea name="desc" value={p.desc} onChange={handleChange} />

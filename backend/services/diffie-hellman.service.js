@@ -1,4 +1,7 @@
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+const webhookService = require('./webhook.service');
 
 /**
  * Diffie-Hellman Key Exchange Service
@@ -9,6 +12,18 @@ const crypto = require('crypto');
 // Base de données temporaire pour les sessions DH
 let dhSessions = [];
 let encryptedMessages = [];
+
+// Helper pour charger les produits
+const getProducts = () => {
+  try {
+    const productsPath = path.join(__dirname, '../data/products.json');
+    const data = fs.readFileSync(productsPath, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('❌ [DH] Erreur lors du chargement des produits:', error.message);
+    return [];
+  }
+};
 
 /**
  * Générer les paramètres DH publics (n, g)
@@ -28,6 +43,27 @@ const generateDHParams = () => {
  * Créer une session DH pour une transaction entre vendeur et acheteur
  */
 exports.createDHSession = (sellerId, buyerId, productId) => {
+  const now = new Date();
+  const requestedProductId = String(productId);
+  const existingSession = dhSessions.find((session) => {
+    return (
+      session.sellerId === sellerId &&
+      session.buyerId === buyerId &&
+      String(session.productId) === requestedProductId &&
+      session.status !== 'expired' &&
+      now < new Date(session.expiresAt)
+    );
+  });
+
+  if (existingSession) {
+    console.log(`🔁 [DH] Session existante réutilisée: ${existingSession.sessionId}`);
+    return {
+      sessionId: existingSession.sessionId,
+      params: existingSession.params,
+      expiresAt: existingSession.expiresAt
+    };
+  }
+
   const params = generateDHParams();
   
   const sessionId = crypto.randomBytes(16).toString('hex');
@@ -38,7 +74,7 @@ exports.createDHSession = (sellerId, buyerId, productId) => {
     sessionId,
     sellerId,
     buyerId,
-    productId,
+    productId: String(productId),
     params, // { prime: n, generator: g }
     sellerPublic: null, // X (sera fourni par le vendeur)
     buyerPublic: null,  // Y (sera fourni par l'acheteur)
@@ -53,6 +89,13 @@ exports.createDHSession = (sellerId, buyerId, productId) => {
   console.log(`   Vendeur ID: ${sellerId}, Acheteur ID: ${buyerId}`);
   console.log(`   Produit ID: ${productId}`);
   console.log(`   Paramètres publics: n=${params.prime.substring(0, 20)}..., g=${params.generator}`);
+  
+  // Notifier le vendeur qu'une session a été créée
+  webhookService.notifyUser(sellerId, 'dh-session-created', {
+    sessionId,
+    buyerId,
+    productId
+  });
   
   return {
     sessionId,
@@ -92,10 +135,20 @@ exports.submitSellerPublicKey = (sessionId, sellerId, publicKey) => {
   console.log(`   Session: ${sessionId}`);
   console.log(`   X: ${publicKey.substring(0, 40)}...`);
   
+  // Notifier l'acheteur que le vendeur a soumis sa clé
+  webhookService.notifyUser(session.buyerId, 'dh-key-submitted', {
+    sessionId,
+    role: 'seller'
+  });
+  
   // Si l'acheteur a déjà soumis sa clé, activer la session
   if (session.buyerPublic) {
     session.status = 'active';
     console.log(`✅ [DH] Session ${sessionId} est maintenant ACTIVE (échange complet)`);
+    
+    // Notifier les deux parties que la session est active
+    webhookService.notifyUser(session.buyerId, 'dh-session-active', { sessionId });
+    webhookService.notifyUser(session.sellerId, 'dh-session-active', { sessionId });
   }
   
   return {
@@ -137,10 +190,20 @@ exports.submitBuyerPublicKey = (sessionId, buyerId, publicKey) => {
   console.log(`   Session: ${sessionId}`);
   console.log(`   Y: ${publicKey.substring(0, 40)}...`);
   
+  // Notifier le vendeur que l'acheteur a soumis sa clé
+  webhookService.notifyUser(session.sellerId, 'dh-key-submitted', {
+    sessionId,
+    role: 'buyer'
+  });
+  
   // Si le vendeur a déjà soumis sa clé, activer la session
   if (session.sellerPublic) {
     session.status = 'active';
     console.log(`✅ [DH] Session ${sessionId} est maintenant ACTIVE (échange complet)`);
+    
+    // Notifier les deux parties que la session est active
+    webhookService.notifyUser(session.buyerId, 'dh-session-active', { sessionId });
+    webhookService.notifyUser(session.sellerId, 'dh-session-active', { sessionId });
   }
   
   return {
@@ -281,14 +344,16 @@ exports.getEncryptedMessages = (sessionId, userId) => {
  * Récupérer toutes les sessions DH pour un utilisateur
  */
 exports.getUserDHSessions = (userId) => {
-  const userSessions = dhSessions.filter(s => 
-    (s.sellerId === userId || s.buyerId === userId) &&
-    new Date() < new Date(s.expiresAt)
-  );
+  const userSessions = dhSessions.filter(s => {
+    return (
+      (s.sellerId === userId || s.buyerId === userId) &&
+      new Date() < new Date(s.expiresAt)
+    );
+  });
   
   return userSessions.map(s => ({
     sessionId: s.sessionId,
-    productId: s.productId,
+    productId: String(s.productId),
     status: s.status,
     otherPartyId: s.sellerId === userId ? s.buyerId : s.sellerId,
     userRole: s.sellerId === userId ? 'seller' : 'buyer',
@@ -333,27 +398,34 @@ exports.verifyAuthenticationChallenge = (sessionId, userId, challengeResponse) =
 };
 
 /**
- * Nettoyer les sessions expirées (à appeler périodiquement)
+ * Nettoyer les sessions expirées et obsolètes (à appeler périodiquement)
  */
 exports.cleanExpiredSessions = () => {
   const now = new Date();
   const beforeCount = dhSessions.length;
   
+  // Charger les produits actuels
+  const products = getProducts();
+  const productIds = new Set(products.map(p => p.id));
+  
   dhSessions = dhSessions.filter(s => {
     const expired = new Date(s.expiresAt) <= now;
-    if (expired) {
-      s.status = 'expired';
+    const productDeleted = !productIds.has(s.productId);
+    
+    if (expired || productDeleted) {
+      s.status = expired ? 'expired' : 'obsolete';
       // Nettoyer aussi les messages associés
       const beforeMessages = encryptedMessages.length;
       encryptedMessages = encryptedMessages.filter(m => m.sessionId !== s.sessionId);
-      console.log(`🧹 [DH] Session ${s.sessionId} expirée, ${beforeMessages - encryptedMessages.length} messages supprimés`);
+      const reason = expired ? 'expirée' : 'produit supprimé';
+      console.log(`🧹 [DH] Session ${s.sessionId} ${reason}, ${beforeMessages - encryptedMessages.length} messages supprimés`);
     }
-    return !expired;
+    return !expired && !productDeleted;
   });
   
   const removed = beforeCount - dhSessions.length;
   if (removed > 0) {
-    console.log(`🧹 [DH] ${removed} session(s) expirée(s) nettoyée(s)`);
+    console.log(`🧹 [DH] ${removed} session(s) nettoyée(s) (expirées ou produits supprimés)`);
   }
   
   return { removed };
@@ -375,6 +447,13 @@ exports.getStatistics = () => {
     totalEncryptedMessages: messages
   };
 };
+
+// Démarrer le nettoyage automatique toutes les 5 minutes
+setInterval(() => {
+  exports.cleanExpiredSessions();
+}, 5 * 60 * 1000);
+
+console.log('♻️  [DH] Nettoyage automatique activé (toutes les 5 minutes)');
 
 // Export de la base de données pour les tests (à retirer en production)
 exports._getDHSessions = () => dhSessions;

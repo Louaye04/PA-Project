@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const webhookService = require('./webhook.service');
 
 const PRODUCTS_FILE = path.join(__dirname, '../data/products.json');
 
@@ -63,6 +64,11 @@ exports.createProduct = (productData) => {
   
   console.log('✅ [Products] Produit créé:', newProduct.id, newProduct.name);
   
+  // Notifier tous les acheteurs qu'un nouveau produit est disponible
+  webhookService.notifyAllBuyers('product-created', {
+    product: newProduct
+  });
+  
   return newProduct;
 };
 
@@ -95,6 +101,11 @@ exports.updateProduct = (productId, sellerId, updates) => {
   
   console.log('✅ [Products] Produit mis à jour:', productId);
   
+  // Notifier tous les utilisateurs de la mise à jour
+  webhookService.notifyAll('product-updated', {
+    product: products[index]
+  });
+  
   return products[index];
 };
 
@@ -120,6 +131,11 @@ exports.deleteProduct = (productId, sellerId) => {
   writeProducts(products);
   
   console.log('🗑️ [Products] Produit supprimé:', productId);
+  
+  // Notifier tous les utilisateurs de la suppression
+  webhookService.notifyAll('product-deleted', {
+    productId: productId
+  });
   
   return deletedProduct;
 };

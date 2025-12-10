@@ -93,6 +93,53 @@
   gap: 8px;
 }
 
+.webhook-indicator {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+
+  .indicator-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ffb74d;
+  }
+
+  &.webhook-connected .indicator-dot {
+    background: #64dd17;
+  }
+
+  &.webhook-active .indicator-dot {
+    background: #00e676;
+  }
+
+  &.webhook-error .indicator-dot {
+    background: #ff5252;
+  }
+
+  &.webhook-disconnected .indicator-dot {
+    background: #ffb74d;
+  }
+
+  &.webhook-pending .indicator-dot {
+    background: #ffd54f;
+  }
+
+  .indicator-text {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .indicator-time {
+    font-size: 10px;
+    opacity: 0.8;
+  }
+}
+
 .status-badge {
   font-size: 11px;
   padding: 3px 8px;

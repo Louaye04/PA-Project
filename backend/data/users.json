@@ -94,5 +94,13 @@
     "name": "Buyer",
     "role": "seller",
     "createdAt": "2025-12-03T08:53:57.636Z"
+  },
+  {
+    "id": 10,
+    "email": "khobziabderehmane@gmail.com",
+    "password": "$2a$10$HTEg/X.o3zOnlyTXUkwb9ejrW07qFTW4Evw6jWtaoquR8O4D1Zw.y",
+    "name": "Vendeur test",
+    "role": "seller",
+    "createdAt": "2025-12-09T21:17:05.564Z"
   }
 ]
