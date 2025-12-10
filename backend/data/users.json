@@ -4,6 +4,7 @@
     "email": "hindkahla09@gmail.com",
     "password": "$2a$10$oOHqYQAHLbV9Gte8sF25CeAAEpUnS9MLm7YN1tggmWt6lHbctQeOa",
     "name": "Kahla Hind",
+    "roles": ["buyer"],
     "role": "buyer",
     "mfaEnabled": true,
     "totpSecret": "IRIG2LRQMYSSI2B4H5JEGT2LNFXUULD2",
@@ -16,6 +17,7 @@
     "email": "hindkahla271@gmail.com",
     "password": "$2a$10$x0LEh2ovC7d.yevOnzOSA.zCAnw9hA8cqt.IQPCFmDRovPHE4ebtu",
     "name": "Kahla Hind",
+    "roles": ["seller"],
     "role": "seller",
     "mfaEnabled": true,
     "totpSecret": "GEZSUQRROMUW2YLTGM5FUTCLOAWHILT3",
@@ -28,6 +30,7 @@
     "email": "hindkahla49@gmail.com",
     "password": "$2a$10$mYXfNbVQ4oMucIjyc2HTd.qCNdh6U57dhuzmFrhwVbabDYmCc0IV6",
     "name": "Kahla Hind",
+    "roles": ["buyer", "seller"],
     "role": "buyer",
     "mfaEnabled": true,
     "totpSecret": "JETHCOSDFFTHUNLGGJBUIYSPEFJCGOSR",
@@ -40,6 +43,7 @@
     "email": "hindkahla413@gmail.com",
     "password": "$2a$10$qUvDhvs0RckGcQHGLhZ8Zu/aeJvK5DKA7VO/E.hiYSNhBCEQDL4LO",
     "name": "admin_413",
+    "roles": ["admin"],
     "role": "admin",
     "mfaEnabled": true,
     "totpSecret": "H5AW26BDPJTDU4JJOJFDYQ3SHZJW4JTN",
@@ -52,6 +56,7 @@
     "email": "hindkahla663@gmail.com",
     "password": "$2a$10$Cbir5oTVZoA0OJT8YbTYxO40PhGCY1lhLxNbGAUxoO1URbfjKMw/6",
     "name": "admin_663",
+    "roles": ["admin"],
     "role": "admin",
     "mfaEnabled": true,
     "totpSecret": "PE3DOKLRLZGHEYS3GRTU6MK5EZ3D6JK3",
@@ -64,6 +69,7 @@
     "email": "hindkahla29@gmail.com",
     "password": "$2a$10$1rAw1qXqv9NBDEQRkoQt1eW58jeDOQ9wjDdAVLU.WY.S2W7NbExxi",
     "name": "admin_29",
+    "roles": ["admin"],
     "role": "admin",
     "mfaEnabled": true,
     "totpSecret": "KEYGOXTVPBXUEVTDIRDFQZKLOMXT6VSC",
@@ -76,6 +82,7 @@
     "email": "babaamerabdenour44@gmail.com",
     "password": "$2a$10$VWqf78MOF.1XDK8zmoa0FOSv7Qy82aXjreHUMt6VYR5X3roYm/B4y",
     "name": "Abdennour BABAAMER",
+    "roles": ["seller"],
     "role": "seller",
     "createdAt": "2025-11-29T20:21:10.887Z"
   },
@@ -84,6 +91,7 @@
     "email": "khobziabderrahmane@gmail.com",
     "password": "$2a$10$qE1fdJDdWSRHI.LCYHLkwePO4V6nwyZ09J8Z8afe13y6fwLNdSLh2",
     "name": "Khobzi Abderrahmane",
+    "roles": ["buyer"],
     "role": "buyer",
     "createdAt": "2025-12-01T11:23:07.513Z"
   },
@@ -92,7 +100,27 @@
     "email": "ninkopvp@gmail.com",
     "password": "$2a$10$UWb0Kx/LQ2ym8y13FQ4CCuZr5EzRkd41nToXGgVJoZSFOmdnCdCla",
     "name": "Buyer",
+    "roles": ["seller"],
     "role": "seller",
     "createdAt": "2025-12-03T08:53:57.636Z"
+  },
+  {
+    "id": 10,
+    "email": "babaamerabdenour6@gmail.com",
+    "password": "$2a$10$6QlVqLZhouP6oab1IV6YceODje/JJzpeYPEVGrim/hnmMbDd9IWMG",
+    "name": "Abdennour BABAAMER",
+    "roles": ["buyer", "seller"],
+    "role": "buyer",
+    "createdAt": "2025-12-09T23:21:26.970Z"
+  },
+  {
+    "id": 11,
+    "email": "admin@gmail.com",
+    "password": "$2a$10$Ok.F9vUr8TuxO/.2V6tLEeL7FxsujvBtbLKsFxZZ.GpIy8ms/sRX.",
+    "name": "Admin",
+    "roles": ["admin"],
+    "role": "user",
+    "mfaEnabled": false,
+    "createdAt": "2025-12-09T23:31:14.461Z"
   }
 ]

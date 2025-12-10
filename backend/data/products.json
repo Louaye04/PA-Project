@@ -5,8 +5,9 @@
     "price": 100,
     "stock": 0,
     "desc": "DRF",
+    "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=900&q=80",
     "sellerId": 9,
-    "sellerName": "ninkopvp@gmail.com",
+    "sellerName": "Buyer",
     "createdAt": "2025-12-03T12:52:54.261Z",
     "updatedAt": "2025-12-03T12:54:00.722Z"
   },
@@ -16,8 +17,9 @@
     "price": 414,
     "stock": 139,
     "desc": "zszsz",
+    "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=900&q=80",
     "sellerId": 9,
-    "sellerName": "ninkopvp@gmail.com",
+    "sellerName": "Buyer",
     "createdAt": "2025-12-03T12:53:09.279Z",
     "updatedAt": "2025-12-04T21:36:20.488Z"
   },
@@ -27,8 +29,9 @@
     "price": 1000,
     "stock": 10000,
     "desc": ";,e",
+    "image": "https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&w=900&q=80",
     "sellerId": 9,
-    "sellerName": "ninkopvp@gmail.com",
+    "sellerName": "Buyer",
     "createdAt": "2025-12-03T13:00:32.969Z",
     "updatedAt": "2025-12-03T13:00:32.969Z"
   },
@@ -36,12 +39,13 @@
     "id": "1764767926679",
     "name": "zzzsz",
     "price": 23,
-    "stock": 223,
+    "stock": 217,
     "desc": "",
+    "image": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80",
     "sellerId": 9,
-    "sellerName": "ninkopvp@gmail.com",
+    "sellerName": "Buyer",
     "createdAt": "2025-12-03T13:18:46.680Z",
-    "updatedAt": "2025-12-03T13:18:46.680Z"
+    "updatedAt": "2025-12-09T19:39:22.444Z"
   },
   {
     "id": "1764768837432",
@@ -49,9 +53,78 @@
     "price": 121,
     "stock": 121,
     "desc": "ASA",
+    "image": "https://images.unsplash.com/photo-1560343090-f0409e92791a?auto=format&fit=crop&w=900&q=80",
     "sellerId": 9,
-    "sellerName": "ninkopvp@gmail.com",
+    "sellerName": "Buyer",
     "createdAt": "2025-12-03T13:33:57.432Z",
     "updatedAt": "2025-12-03T13:33:57.432Z"
+  },
+  {
+    "id": "1765309195904",
+    "name": "test",
+    "price": 15800,
+    "stock": 4,
+    "desc": "",
+    "image": "https://images.unsplash.com/photo-1491553895911-0055eca6402d?auto=format&fit=crop&w=900&q=80",
+    "sellerId": 7,
+    "sellerName": "Abdennour BABAAMER",
+    "createdAt": "2025-12-09T19:39:55.904Z",
+    "updatedAt": "2025-12-09T19:40:06.334Z"
+  },
+  {
+    "id": "1765316655295",
+    "name": "Sbat",
+    "price": 1500,
+    "stock": 150,
+    "desc": "Chbab",
+    "sellerId": 7,
+    "sellerName": "babaamerabdenour44@gmail.com",
+    "createdAt": "2025-12-09T21:44:15.295Z",
+    "updatedAt": "2025-12-09T21:44:15.295Z"
+  },
+  {
+    "id": "1765316675444",
+    "name": "Sebat",
+    "price": 1500,
+    "stock": 150,
+    "desc": "CHBAB",
+    "sellerId": 7,
+    "sellerName": "babaamerabdenour44@gmail.com",
+    "createdAt": "2025-12-09T21:44:35.444Z",
+    "updatedAt": "2025-12-09T21:44:35.444Z"
+  },
+  {
+    "id": "1765316712861",
+    "name": "Sbat",
+    "price": 1500,
+    "stock": 15,
+    "desc": "CHBAB",
+    "sellerId": 7,
+    "sellerName": "babaamerabdenour44@gmail.com",
+    "createdAt": "2025-12-09T21:45:12.861Z",
+    "updatedAt": "2025-12-09T21:45:12.861Z"
+  },
+  {
+    "id": "1765317324430",
+    "name": "Sebat",
+    "price": 4500,
+    "stock": 150,
+    "desc": "CHBAB",
+    "sellerId": 7,
+    "sellerName": "babaamerabdenour44@gmail.com",
+    "createdAt": "2025-12-09T21:55:24.430Z",
+    "updatedAt": "2025-12-09T21:55:24.430Z"
+  },
+  {
+    "id": "1765324728411",
+    "name": "BLIGHA",
+    "price": 1000,
+    "stock": 200,
+    "desc": "CHABA",
+    "image": "",
+    "sellerId": 10,
+    "sellerName": "babaamerabdenour6@gmail.com",
+    "createdAt": "2025-12-09T23:58:48.411Z",
+    "updatedAt": "2025-12-09T23:58:48.411Z"
   }
 ]

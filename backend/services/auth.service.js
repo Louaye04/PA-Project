@@ -215,12 +215,23 @@ const verifyPassword = async (plainPassword, hashedPassword) => {
 
 /**
  * Generate JWT token
+ * @param {Object} user - User object
+ * @param {string} selectedRole - The role the user selected to use (optional, defaults to first role or 'buyer')
  */
-const generateToken = (user) => {
+const generateToken = (user, selectedRole = null) => {
+  const userRoles = user.roles || (user.role ? [user.role] : ["buyer"]);
+
+  // Determine active role: use selectedRole if valid, otherwise default to buyer or first role
+  let activeRole = selectedRole;
+  if (!activeRole || !userRoles.includes(activeRole)) {
+    activeRole = userRoles.includes("buyer") ? "buyer" : userRoles[0];
+  }
+
   const payload = {
     id: user.id,
     email: user.email,
-    role: user.role,
+    roles: userRoles, // All available roles
+    role: activeRole, // Currently active role
   };
 
   return jwt.sign(
@@ -231,10 +242,19 @@ const generateToken = (user) => {
 };
 
 /**
+ * Issue JWT token for a given user object and optional selectedRole
+ */
+exports.issueTokenForUser = (user, selectedRole = null) => {
+  const token = generateToken(user, selectedRole);
+  const { password: _, ...userWithoutPassword } = user;
+  return { token, user: userWithoutPassword };
+};
+
+/**
  * Register User
  * Creates a new user account
  */
-exports.registerUser = async (name, email, password, role, birthCity) => {
+exports.registerUser = async (name, email, password, roles, birthCity) => {
   // Check if user already exists
   const existingUser = findUserByEmail(email);
 
@@ -247,12 +267,24 @@ exports.registerUser = async (name, email, password, role, birthCity) => {
   // Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  // Validate provided role or default to 'user'
+  // Validate provided roles array or default to ['buyer']
   const allowedRoles = ["admin", "buyer", "seller", "user"];
-  const normalizedRole = (role && String(role).toLowerCase()) || "user";
-  const finalRole = allowedRoles.includes(normalizedRole)
-    ? normalizedRole
-    : "user";
+  let finalRoles = [];
+
+  if (Array.isArray(roles) && roles.length > 0) {
+    // Normalize and filter valid roles
+    finalRoles = roles
+      .map((r) => String(r).toLowerCase())
+      .filter((r) => allowedRoles.includes(r));
+  }
+
+  // If no valid roles provided, default to ['buyer']
+  if (finalRoles.length === 0) {
+    finalRoles = ["buyer"];
+  }
+
+  // Store primary role (first in array) for backward compatibility
+  const primaryRole = finalRoles[0];
 
   /* ============================================
      COMMENTED OUT - OLD MFA/GOOGLE AUTHENTICATOR
@@ -267,7 +299,8 @@ exports.registerUser = async (name, email, password, role, birthCity) => {
     email: email.toLowerCase(),
     password: hashedPassword,
     name: name.trim(),
-    role: finalRole,
+    roles: finalRoles, // NEW: Array of roles
+    role: primaryRole, // Keep for backward compatibility
     /* ============================================
        COMMENTED OUT - OLD MFA/GOOGLE AUTHENTICATOR
        ============================================
@@ -382,7 +415,7 @@ exports.authenticateUser = async function (email, password, requestedRole) {
     throw error;
   }
 
-  // If a requested role is provided as a third parameter, verify it matches stored role
+  // If a requested role is provided as a third parameter, verify user has this role
   // Accept either a string or a small object like { role: 'buyer' }
   if (requestedRole) {
     if (typeof requestedRole === "object" && requestedRole !== null) {
@@ -393,16 +426,19 @@ exports.authenticateUser = async function (email, password, requestedRole) {
         String(requestedRole);
     }
     const normalizedRequested = String(requestedRole).toLowerCase();
-    // Special handling for admin role: only allow the first three admin accounts to log in as admin.
-    // To avoid leaking role information, return a generic invalid credentials error when
-    // a non-authorized admin attempts to login as admin.
-    if (normalizedRequested !== user.role) {
+
+    // Get user's roles (support both old single role and new roles array)
+    const userRoles = user.roles || (user.role ? [user.role] : []);
+
+    // Check if user has the requested role
+    if (!userRoles.includes(normalizedRequested)) {
+      // Special handling for admin role
       if (normalizedRequested === "admin") {
         const error = new Error("E-mail ou mot de passe invalide");
         error.statusCode = 401; // Unauthorized (generic)
         throw error;
       }
-      const error = new Error(`Cet utilisateur n'est pas dans ce rôle`);
+      const error = new Error(`Cet utilisateur n'a pas accès à ce rôle`);
       error.statusCode = 403; // Forbidden
       throw error;
     }
@@ -439,8 +475,8 @@ exports.authenticateUser = async function (email, password, requestedRole) {
   }
   ============================================ */
 
-  // Generate token
-  const token = generateToken(user);
+  // Generate token with selected role (if any)
+  const token = generateToken(user, requestedRole);
 
   // Return user data (without password)
   const { password: _, ...userWithoutPassword } = user;
@@ -604,8 +640,9 @@ exports.resendOTP = async (email, userName, ipAddress) => {
 /**
  * Verify Email OTP and Issue Token
  * Verifies OTP and issues JWT token upon successful verification
+ * @param {string} selectedRole - The role the user selected to use during login (optional)
  */
-exports.verifyEmailOTP = async (email, otp, sessionId) => {
+exports.verifyEmailOTP = async (email, otp, sessionId, selectedRole = null) => {
   try {
     // Verify OTP using email service
     const verificationResult = await emailService.verifyOTP(
@@ -628,8 +665,8 @@ exports.verifyEmailOTP = async (email, otp, sessionId) => {
       throw error;
     }
 
-    // Generate JWT token
-    const token = generateToken(user);
+    // Generate JWT token with selected role
+    const token = generateToken(user, selectedRole);
 
     // Return user data (without password)
     const { password: _, ...userWithoutPassword } = user;

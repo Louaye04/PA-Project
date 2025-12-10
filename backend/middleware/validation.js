@@ -9,15 +9,15 @@ exports.signupValidation = [
     .notEmpty()
     .withMessage("Full name is required")
     .isLength({ min: 2 })
-    .withMessage("Name must be at least 2 characters long")
-    .matches(/^[a-zA-Z\s]+$/)
-    .withMessage("Name can only contain letters and spaces"),
+    .withMessage("Name must be at least 2 characters long"),
 
   body("email")
     .trim()
+    .notEmpty()
+    .withMessage("Email is required")
     .isEmail()
-    .normalizeEmail()
-    .withMessage("Please provide a valid email address"),
+    .withMessage("Please provide a valid email address")
+    .normalizeEmail(),
 
   body("password")
     .notEmpty()
@@ -28,23 +28,37 @@ exports.signupValidation = [
     .withMessage(
       "Password must contain at least one uppercase letter, one lowercase letter, and one number"
     ),
-  // Role should be provided at signup and must be one of the allowed values
+
+  // Optional roles validation - if provided, must be valid array
+  body("roles")
+    .optional()
+    .custom((roles) => {
+      // Allow null/undefined
+      if (!roles) return true;
+
+      // Must be an array
+      if (!Array.isArray(roles)) {
+        throw new Error("Roles must be an array");
+      }
+
+      // Allow empty array (controller handles default)
+      if (roles.length === 0) return true;
+
+      // Validate each role
+      const allowed = ["admin", "buyer", "seller", "user"];
+      const allValid = roles.every((r) => allowed.includes(r));
+
+      if (!allValid) {
+        throw new Error("Invalid role selected");
+      }
+      return true;
+    }),
+
+  // Optional single role for backward compatibility
   body("role")
-    .notEmpty()
-    .withMessage("Role is required")
+    .optional()
     .isIn(["admin", "buyer", "seller", "user"])
-    .withMessage("Role must be one of admin, buyer, seller or user"),
-  /* ============================================
-     COMMENTED OUT - OLD MFA BIRTH CITY VALIDATION
-     ============================================
-  // Birth city required for MFA secret question
-  ,
-  body('birthCity')
-    .notEmpty()
-    .withMessage('Ville de naissance est requise')
-    .isLength({ min: 2 })
-    .withMessage('Ville de naissance invalide')
-  ============================================ */
+    .withMessage("Role must be one of admin, buyer, seller, or user"),
 ];
 
 /**
@@ -53,35 +67,22 @@ exports.signupValidation = [
 exports.loginValidation = [
   body("email")
     .trim()
+    .notEmpty()
+    .withMessage("Email is required")
     .isEmail()
-    .normalizeEmail()
-    .withMessage("Please provide a valid email address"),
+    .withMessage("Please provide a valid email address")
+    .normalizeEmail(),
 
   body("password")
     .notEmpty()
     .withMessage("Password is required")
     .isLength({ min: 6 })
     .withMessage("Password must be at least 6 characters long"),
-  // Role may be provided on login (we'll validate it if present)
-  // Accept role as either a string or a small object like { role: 'buyer' } or { value: 'buyer' }
+
+  // Role is optional on login - user can select it later
   body("role")
     .optional()
-    .custom((val, { req }) => {
-      // Prefer the raw value from req.body in case express-validator coerced it
-      const raw = req && req.body ? req.body.role : val;
-      const allowed = ["admin", "buyer", "seller", "user"];
-
-      if (typeof raw === "string") {
-        return allowed.includes(raw);
-      }
-
-      if (typeof raw === "object" && raw !== null) {
-        const extracted = raw.role || raw.value || raw.name;
-        return typeof extracted === "string" && allowed.includes(extracted);
-      }
-
-      return false;
-    })
+    .isIn(["admin", "buyer", "seller", "user"])
     .withMessage("Role must be one of admin, buyer, seller or user"),
 ];
 
@@ -107,4 +108,10 @@ exports.otpValidation = [
     .optional()
     .isString()
     .withMessage("Session ID must be a string"),
+
+  // Optional selected role for multi-role users
+  body("selectedRole")
+    .optional()
+    .isIn(["admin", "buyer", "seller", "user"])
+    .withMessage("Selected role must be one of admin, buyer, seller or user"),
 ];

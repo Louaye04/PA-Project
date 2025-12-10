@@ -4,18 +4,32 @@ import Logo from '../Logo/Logo';
 import SecureChat from '../SecureChat/SecureChat';
 import { getAllProducts } from '../../utils/product-api';
 import { createOrder, getMyOrders } from '../../utils/order-api';
+import { useToast } from '../../contexts/ToastContext';
 
 const BuyerDashboard = ({ userName }) => {
+  const toast = useToast();
+
+  const PRODUCT_IMAGES = [
+    'https://images.unsplash.com/photo-1528701800489-20be9fbf7c54?auto=format&fit=crop&w=900&q=80', // sneakers
+    'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=900&q=80', // apparel
+    'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=900&q=80', // watch
+    'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=900&q=80', // bag
+    'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=900&q=80', // headphones
+    'https://images.unsplash.com/photo-1460353581641-37baddab0fa2?auto=format&fit=crop&w=900&q=80'  // camera
+  ];
+
+  const productImageFor = (product, idx = 0) => product.image || PRODUCT_IMAGES[idx % PRODUCT_IMAGES.length];
+
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState(() => {
-    try { const raw = localStorage.getItem('buyerCart'); if (raw) return JSON.parse(raw); } catch (e) {}
+    try { const raw = localStorage.getItem('buyerCart'); if (raw) return JSON.parse(raw); } catch (e) { }
     return [];
   });
   const [query, setQuery] = useState('');
   const [currentTab, setCurrentTab] = useState('home');
   const [productModal, setProductModal] = useState(null);
   const [favorites, setFavorites] = useState(() => {
-    try { const raw = localStorage.getItem('buyerFavorites'); if (raw) return JSON.parse(raw); } catch (e) {}
+    try { const raw = localStorage.getItem('buyerFavorites'); if (raw) return JSON.parse(raw); } catch (e) { }
     return [];
   });
   const [orders, setOrders] = useState([]);
@@ -24,8 +38,15 @@ const BuyerDashboard = ({ userName }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Orders table state
+  const [orderSearch, setOrderSearch] = useState('');
+  const [orderSort, setOrderSort] = useState({ field: 'createdAt', direction: 'desc' });
+  const [orderStatusFilter, setOrderStatusFilter] = useState('all');
+  const [ordersPerPage, setOrdersPerPage] = useState(10);
+  const [currentOrderPage, setCurrentOrderPage] = useState(1);
+
   const handleLogout = () => {
-    try { localStorage.removeItem('authToken'); localStorage.removeItem('userEmail'); localStorage.removeItem('userName'); } catch (e) {}
+    try { localStorage.removeItem('authToken'); localStorage.removeItem('userEmail'); localStorage.removeItem('userName'); } catch (e) { }
     window.location.reload();
   };
 
@@ -66,20 +87,96 @@ const BuyerDashboard = ({ userName }) => {
     };
   }, []);
 
-  useEffect(() => { try { localStorage.setItem('buyerCart', JSON.stringify(cart)); } catch (e) {} }, [cart]);
+  useEffect(() => { try { localStorage.setItem('buyerCart', JSON.stringify(cart)); } catch (e) { } }, [cart]);
+  useEffect(() => { try { localStorage.setItem('buyerFavorites', JSON.stringify(favorites)); } catch (e) { } }, [favorites]);
+
+  const toggleFavorite = (product) => {
+    setFavorites(prev => {
+      const exists = prev.find(x => x.id === product.id);
+      if (exists) {
+        toast.info(`Retiré des favoris: ${product.name}`);
+        return prev.filter(x => x.id !== product.id);
+      }
+      toast.success(`Ajouté aux favoris: ${product.name}`);
+      return [...prev, product];
+    });
+  };
 
   const addToCart = (p) => {
     setCart(prev => {
       const existing = prev.find(x => x.id === p.id);
-      if (existing) return prev.map(x => x.id === p.id ? { ...x, qty: x.qty + 1 } : x);
+      if (existing) {
+        toast.info(`Quantité augmentée: ${p.name}`);
+        return prev.map(x => x.id === p.id ? { ...x, qty: x.qty + 1 } : x);
+      }
+      toast.success(`Ajouté au panier: ${p.name}`);
       return [...prev, { ...p, qty: 1 }];
     });
   };
 
-  const removeFromCart = (id) => setCart(prev => prev.filter(x => x.id !== id));
+  const removeFromCart = (id) => {
+    const item = cart.find(x => x.id === id);
+    if (item) toast.warning(`Retiré du panier: ${item.name}`);
+    setCart(prev => prev.filter(x => x.id !== id));
+  };
   const updateQty = (id, qty) => setCart(prev => prev.map(x => x.id === id ? { ...x, qty } : x));
 
   const filtered = products.filter(p => p.name.toLowerCase().includes(query.toLowerCase()) || p.desc.toLowerCase().includes(query.toLowerCase()));
+
+  // Orders filtering, sorting, and pagination
+  const filteredOrders = orders
+    .filter(o => {
+      const matchesSearch = orderSearch === '' ||
+        o.productName.toLowerCase().includes(orderSearch.toLowerCase()) ||
+        o.sellerName.toLowerCase().includes(orderSearch.toLowerCase()) ||
+        o.id.toString().includes(orderSearch);
+      const matchesStatus = orderStatusFilter === 'all' || o.status === orderStatusFilter;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      const { field, direction } = orderSort;
+      let aVal = a[field];
+      let bVal = b[field];
+
+      if (field === 'createdAt') {
+        aVal = new Date(aVal).getTime();
+        bVal = new Date(bVal).getTime();
+      } else if (field === 'totalPrice' || field === 'quantity') {
+        aVal = Number(aVal);
+        bVal = Number(bVal);
+      } else if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase();
+        bVal = bVal.toLowerCase();
+      }
+
+      if (direction === 'asc') return aVal > bVal ? 1 : -1;
+      return aVal < bVal ? 1 : -1;
+    });
+
+  const totalOrderPages = Math.ceil(filteredOrders.length / ordersPerPage);
+  const paginatedOrders = filteredOrders.slice(
+    (currentOrderPage - 1) * ordersPerPage,
+    currentOrderPage * ordersPerPage
+  );
+
+  const handleOrderSort = (field) => {
+    setOrderSort(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const getStatusBadge = (status) => {
+    const statusMap = {
+      pending: { label: 'En attente', class: 'status-pending' },
+      confirmed: { label: 'Confirmée', class: 'status-confirmed' },
+      shipped: { label: 'Expédiée', class: 'status-shipped' },
+      delivered: { label: 'Livrée', class: 'status-delivered' },
+      cancelled: { label: 'Annulée', class: 'status-cancelled' }
+    };
+    const mapped = statusMap[status] || { label: status, class: 'status-default' };
+    return <span className={`status-badge ${mapped.class}`}>{mapped.label}</span>;
+  };
 
   if (loading) {
     return (
@@ -103,11 +200,11 @@ const BuyerDashboard = ({ userName }) => {
       <aside className="buyer-sidebar">
         <div className="brand"><Logo size={44} /><div className="brand-name">BKH Shop</div></div>
         <nav className="nav-list">
-          <button className={`nav-item ${currentTab==='home' ? 'active' : ''}`} onClick={() => setCurrentTab('home')}>Accueil</button>
-          <button className={`nav-item ${currentTab==='orders' ? 'active' : ''}`} onClick={() => setCurrentTab('orders')}>Mes commandes</button>
-          <button className={`nav-item ${currentTab==='favorites' ? 'active' : ''}`} onClick={() => setCurrentTab('favorites')}>Favoris</button>
-          <button className={`nav-item ${currentTab==='help' ? 'active' : ''}`} onClick={() => setCurrentTab('help')}>Aide</button>
-          <button className={`nav-item ${currentTab==='settings' ? 'active' : ''}`} onClick={() => setCurrentTab('settings')}>Paramètres</button>
+          <button className={`nav-item ${currentTab === 'home' ? 'active' : ''}`} onClick={() => setCurrentTab('home')}>Accueil</button>
+          <button className={`nav-item ${currentTab === 'orders' ? 'active' : ''}`} onClick={() => setCurrentTab('orders')}>Mes commandes</button>
+          <button className={`nav-item ${currentTab === 'favorites' ? 'active' : ''}`} onClick={() => setCurrentTab('favorites')}>Favoris</button>
+          <button className={`nav-item ${currentTab === 'help' ? 'active' : ''}`} onClick={() => setCurrentTab('help')}>Aide</button>
+          <button className={`nav-item ${currentTab === 'settings' ? 'active' : ''}`} onClick={() => setCurrentTab('settings')}>Paramètres</button>
         </nav>
       </aside>
 
@@ -118,7 +215,7 @@ const BuyerDashboard = ({ userName }) => {
           </div>
           <div className="top-actions">
             <div className="greeting">Bonjour {userName}</div>
-            <button className="cart-btn" onClick={() => setCartVisible(v => !v)} aria-expanded={cartVisible} aria-controls="cart-drawer">🛒 Panier <span className="cart-count">({cart.reduce((s,i)=>s+i.qty,0)})</span></button>
+            <button className="cart-btn" onClick={() => setCartVisible(v => !v)} aria-expanded={cartVisible} aria-controls="cart-drawer">🛒 Panier <span className="cart-count">({cart.reduce((s, i) => s + i.qty, 0)})</span></button>
             <button className="btn ghost" onClick={handleLogout}>Se déconnecter</button>
           </div>
         </header>
@@ -141,45 +238,50 @@ const BuyerDashboard = ({ userName }) => {
                     {products.length === 0 ? 'Aucun produit disponible pour le moment.' : 'Aucun produit ne correspond à votre recherche.'}
                   </div>
                 ) : (
-                  filtered.map(p => (
-                    <article key={p.id} className="card">
-                      <div className="card-header">
-                        <div className="card-title">{p.name}</div>
-                        <div className="card-seller">{p.sellerName || p.seller}</div>
-                      </div>
-                      <div className="card-body">
-                        <p className="desc">{p.desc}</p>
-                      </div>
-                    <div className="card-footer">
-                      <div className="price">{p.price} DA</div>
-                      <div className="actions">
-                        <button className="btn secure-buy" onClick={async () => {
-                          const qty = prompt('Quantité à commander:', '1');
-                          if (!qty || isNaN(qty) || qty <= 0) return;
-                          try {
-                            await createOrder({ productId: p.id, quantity: Number(qty) });
-                            alert('Commande créée avec succès!');
-                            await loadData();
-                            setChatProduct(p);
-                            setSecureChatOpen(true);
-                          } catch (err) {
-                            alert('Erreur lors de la commande: ' + (err.response?.data?.error || err.message));
-                          }
-                        }}>🔐 Acheter avec Canal Sécurisé</button>
-                        <button className="btn" onClick={() => addToCart(p)}>Ajouter au panier</button>
-                        <button className="btn ghost" onClick={() => setProductModal(p)}>Voir</button>
-                        <button className="btn" onClick={() => {
-                          setFavorites(prev => {
-                            if (prev.find(x => x.id === p.id)) return prev;
-                            const next = [...prev, p];
-                            try { localStorage.setItem('buyerFavorites', JSON.stringify(next)); } catch (e) {}
-                            return next;
-                          });
-                        }}>{favorites.find(x=>x.id===p.id) ? 'Favori' : 'Ajouter aux favoris'}</button>
-                      </div>
-                    </div>
-                    </article>
-                  ))
+                  filtered.map((p, idx) => {
+                    const img = productImageFor(p, idx);
+                    return (
+                      <article key={p.id} className="card">
+                        <div className="card-header">
+                          <div className="card-title">{p.name}</div>
+                          <div className="card-seller">{p.sellerName || p.seller}</div>
+                          <button
+                            className={`fav-toggle ${favorites.find(x => x.id === p.id) ? 'active' : ''}`}
+                            onClick={() => toggleFavorite(p)}
+                            aria-label={favorites.find(x => x.id === p.id) ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                          >
+                            <span className="heart" aria-hidden="true">♥</span>
+                          </button>
+                        </div>
+                        <div className="card-media">
+                          <img src={img} alt={`Visuel de ${p.name}`} loading="lazy" />
+                        </div>
+                        <div className="card-body">
+                          <p className="desc">{p.desc}</p>
+                        </div>
+                        <div className="card-footer">
+                          <div className="price">{p.price} DA</div>
+                          <div className="actions">
+                            <button className="btn secure-buy" onClick={async () => {
+                              const qty = prompt('Quantité à commander:', '1');
+                              if (!qty || isNaN(qty) || qty <= 0) return;
+                              try {
+                                await createOrder({ productId: p.id, quantity: Number(qty) });
+                                toast.success(`Commande créée: ${p.name} (x${qty})`);
+                                await loadData();
+                                setChatProduct(p);
+                                setSecureChatOpen(true);
+                              } catch (err) {
+                                toast.error('Erreur lors de la commande: ' + (err.response?.data?.error || err.message));
+                              }
+                            }}>🔐 Acheter avec Canal Sécurisé</button>
+                            <button className="btn" onClick={() => addToCart(p)}>Ajouter au panier</button>
+                            <button className="btn ghost" onClick={() => setProductModal(p)}>Voir</button>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })
                 )}
               </div>
             </section>
@@ -188,24 +290,183 @@ const BuyerDashboard = ({ userName }) => {
 
         {currentTab === 'orders' && (
           <section className="orders-view">
-            <h2>Mes commandes</h2>
-            <div className="orders-list">
-              {orders.length === 0 ? (
-                <div>Aucune commande pour le moment.</div>
-              ) : (
-                orders.map(o => (
-                  <div className="order-card" key={o.id}>
-                    <div className="order-header">Commande #{o.id} — {new Date(o.createdAt).toLocaleDateString()}</div>
-                    <div className="order-body">
-                      <div>Produit: {o.productName} x{o.quantity}</div>
-                      <div>Vendeur: {o.sellerName}</div>
-                      <div>Total: {o.totalPrice} DA</div>
-                      <div>Statut: <strong>{o.status}</strong></div>
-                    </div>
-                  </div>
-                ))
-              )}
+            <div className="orders-header">
+              <h2>Mes commandes</h2>
+              <div className="orders-stats">
+                <div className="stat-badge">
+                  <span className="stat-label">Total</span>
+                  <span className="stat-value">{orders.length}</span>
+                </div>
+                <div className="stat-badge">
+                  <span className="stat-label">Affichées</span>
+                  <span className="stat-value">{filteredOrders.length}</span>
+                </div>
+              </div>
             </div>
+
+            <div className="orders-controls">
+              <div className="search-box">
+                <span className="search-icon">🔍</span>
+                <input
+                  type="text"
+                  placeholder="Rechercher par produit, vendeur ou numéro..."
+                  value={orderSearch}
+                  onChange={(e) => { setOrderSearch(e.target.value); setCurrentOrderPage(1); }}
+                />
+                {orderSearch && (
+                  <button className="clear-btn" onClick={() => setOrderSearch('')}>✕</button>
+                )}
+              </div>
+
+              <div className="filter-group">
+                <label>Statut:</label>
+                <select value={orderStatusFilter} onChange={(e) => { setOrderStatusFilter(e.target.value); setCurrentOrderPage(1); }}>
+                  <option value="all">Tous</option>
+                  <option value="pending">En attente</option>
+                  <option value="confirmed">Confirmée</option>
+                  <option value="shipped">Expédiée</option>
+                  <option value="delivered">Livrée</option>
+                  <option value="cancelled">Annulée</option>
+                </select>
+              </div>
+
+              <div className="filter-group">
+                <label>Par page:</label>
+                <select value={ordersPerPage} onChange={(e) => { setOrdersPerPage(Number(e.target.value)); setCurrentOrderPage(1); }}>
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                </select>
+              </div>
+            </div>
+
+            {orders.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">📦</div>
+                <p>Aucune commande pour le moment.</p>
+              </div>
+            ) : filteredOrders.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">🔍</div>
+                <p>Aucune commande ne correspond à vos critères.</p>
+                <button className="btn ghost" onClick={() => { setOrderSearch(''); setOrderStatusFilter('all'); }}>
+                  Réinitialiser les filtres
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="table-container">
+                  <table className="orders-table">
+                    <thead>
+                      <tr>
+                        <th onClick={() => handleOrderSort('id')} className="sortable">
+                          <span>N° Commande</span>
+                          {orderSort.field === 'id' && <span className="sort-icon">{orderSort.direction === 'asc' ? '↑' : '↓'}</span>}
+                        </th>
+                        <th onClick={() => handleOrderSort('createdAt')} className="sortable">
+                          <span>Date</span>
+                          {orderSort.field === 'createdAt' && <span className="sort-icon">{orderSort.direction === 'asc' ? '↑' : '↓'}</span>}
+                        </th>
+                        <th onClick={() => handleOrderSort('productName')} className="sortable">
+                          <span>Produit</span>
+                          {orderSort.field === 'productName' && <span className="sort-icon">{orderSort.direction === 'asc' ? '↑' : '↓'}</span>}
+                        </th>
+                        <th onClick={() => handleOrderSort('sellerName')} className="sortable">
+                          <span>Vendeur</span>
+                          {orderSort.field === 'sellerName' && <span className="sort-icon">{orderSort.direction === 'asc' ? '↑' : '↓'}</span>}
+                        </th>
+                        <th onClick={() => handleOrderSort('quantity')} className="sortable text-center">
+                          <span>Qté</span>
+                          {orderSort.field === 'quantity' && <span className="sort-icon">{orderSort.direction === 'asc' ? '↑' : '↓'}</span>}
+                        </th>
+                        <th onClick={() => handleOrderSort('totalPrice')} className="sortable text-right">
+                          <span>Total</span>
+                          {orderSort.field === 'totalPrice' && <span className="sort-icon">{orderSort.direction === 'asc' ? '↑' : '↓'}</span>}
+                        </th>
+                        <th onClick={() => handleOrderSort('status')} className="sortable">
+                          <span>Statut</span>
+                          {orderSort.field === 'status' && <span className="sort-icon">{orderSort.direction === 'asc' ? '↑' : '↓'}</span>}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedOrders.map(o => (
+                        <tr key={o.id}>
+                          <td className="order-id">#{o.id}</td>
+                          <td className="order-date">{new Date(o.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                          <td className="product-name">{o.productName}</td>
+                          <td className="seller-name">{o.sellerName}</td>
+                          <td className="text-center">×{o.quantity}</td>
+                          <td className="text-right price-cell">{o.totalPrice.toLocaleString()} DA</td>
+                          <td>{getStatusBadge(o.status)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {totalOrderPages > 1 && (
+                  <div className="pagination">
+                    <button
+                      className="page-btn"
+                      disabled={currentOrderPage === 1}
+                      onClick={() => setCurrentOrderPage(1)}
+                    >
+                      ««
+                    </button>
+                    <button
+                      className="page-btn"
+                      disabled={currentOrderPage === 1}
+                      onClick={() => setCurrentOrderPage(prev => prev - 1)}
+                    >
+                      ‹
+                    </button>
+
+                    <div className="page-numbers">
+                      {Array.from({ length: totalOrderPages }, (_, i) => i + 1)
+                        .filter(page => {
+                          if (totalOrderPages <= 7) return true;
+                          if (page === 1 || page === totalOrderPages) return true;
+                          if (Math.abs(page - currentOrderPage) <= 1) return true;
+                          return false;
+                        })
+                        .map((page, idx, arr) => (
+                          <React.Fragment key={page}>
+                            {idx > 0 && arr[idx - 1] !== page - 1 && <span className="ellipsis">...</span>}
+                            <button
+                              className={`page-btn ${currentOrderPage === page ? 'active' : ''}`}
+                              onClick={() => setCurrentOrderPage(page)}
+                            >
+                              {page}
+                            </button>
+                          </React.Fragment>
+                        ))
+                      }
+                    </div>
+
+                    <button
+                      className="page-btn"
+                      disabled={currentOrderPage === totalOrderPages}
+                      onClick={() => setCurrentOrderPage(prev => prev + 1)}
+                    >
+                      ›
+                    </button>
+                    <button
+                      className="page-btn"
+                      disabled={currentOrderPage === totalOrderPages}
+                      onClick={() => setCurrentOrderPage(totalOrderPages)}
+                    >
+                      »»
+                    </button>
+
+                    <span className="page-info">
+                      Page {currentOrderPage} sur {totalOrderPages}
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
           </section>
         )}
 
@@ -214,17 +475,33 @@ const BuyerDashboard = ({ userName }) => {
             <h2>Favoris</h2>
             {favorites.length === 0 ? <div>Aucun favori pour le moment.</div> : (
               <div className="grid">
-                {favorites.map(f => (
-                  <article className="card" key={f.id}>
-                    <div className="card-header"><div className="card-title">{f.name}</div><div className="card-seller">{f.seller}</div></div>
-                    <div className="card-body"><p className="desc">{f.desc}</p></div>
-                    <div className="card-footer">
-                      <div className="price">{f.price} DA</div>
-                      <div className="actions"><button className="btn" onClick={()=>setProductModal(f)}>Voir</button>
-                        <button className="btn ghost" onClick={() => { const next = favorites.filter(x=>x.id!==f.id); setFavorites(next); try{localStorage.setItem('buyerFavorites', JSON.stringify(next));}catch(e){} }}>Supprimer</button></div>
-                    </div>
-                  </article>
-                ))}
+                {favorites.map((f, idx) => {
+                  const img = productImageFor(f, idx);
+                  return (
+                    <article className="card" key={f.id}>
+                      <button
+                        className="fav-toggle active"
+                        onClick={() => toggleFavorite(f)}
+                        aria-label="Retirer des favoris"
+                      >
+                        <span className="heart" aria-hidden="true">♥</span>
+                      </button>
+                      <div className="card-media"><img src={img} alt={`Visuel de ${f.name}`} loading="lazy" /></div>
+                      <div className="card-body">
+                        <div className="card-title">{f.name}</div>
+                        <div className="card-seller">Par {f.sellerName || f.seller}</div>
+                        {f.desc && <p className="desc">{f.desc}</p>}
+                      </div>
+                      <div className="card-footer">
+                        <div className="price">{f.price} DA</div>
+                        <div className="actions">
+                          <button className="btn" onClick={() => setProductModal(f)}>Voir</button>
+                          <button className="btn ghost" onClick={() => addToCart(f)}>Ajouter</button>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             )}
           </section>
@@ -247,10 +524,10 @@ const BuyerDashboard = ({ userName }) => {
         {currentTab === 'settings' && (
           <section className="settings-view">
             <h2>Paramètres</h2>
-            <form className="settings-form" onSubmit={(e)=>{ e.preventDefault(); setSettingsSaved(true); try{localStorage.setItem('buyerSettings', JSON.stringify(settings)); }catch(e){}; setTimeout(()=>setSettingsSaved(false),3000); }}>
-              <div className="form-row"><label>Devise par défaut<select value={settings.currency} onChange={(e)=>setSettings({...settings,currency:e.target.value})}><option>DA</option><option>EUR</option><option>USD</option></select></label></div>
-              <div className="form-row"><label>Fuseau horaire<select value={settings.timezone} onChange={(e)=>setSettings({...settings,timezone:e.target.value})}><option>Africa/Algiers</option><option>UTC</option><option>Europe/Paris</option></select></label></div>
-              <div className="form-row"><label>Email de contact<input value={settings.contactEmail} onChange={(e)=>setSettings({...settings,contactEmail:e.target.value})} /></label></div>
+            <form className="settings-form" onSubmit={(e) => { e.preventDefault(); setSettingsSaved(true); try { localStorage.setItem('buyerSettings', JSON.stringify(settings)); } catch (e) { }; setTimeout(() => setSettingsSaved(false), 3000); }}>
+              <div className="form-row"><label>Devise par défaut<select value={settings.currency} onChange={(e) => setSettings({ ...settings, currency: e.target.value })}><option>DA</option><option>EUR</option><option>USD</option></select></label></div>
+              <div className="form-row"><label>Fuseau horaire<select value={settings.timezone} onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}><option>Africa/Algiers</option><option>UTC</option><option>Europe/Paris</option></select></label></div>
+              <div className="form-row"><label>Email de contact<input value={settings.contactEmail} onChange={(e) => setSettings({ ...settings, contactEmail: e.target.value })} /></label></div>
               <div className="form-actions"><button className="btn" type="submit">Enregistrer</button></div>
               {settingsSaved && <div className="save-banner success">Paramètres enregistrés avec succès.</div>}
             </form>
@@ -268,15 +545,15 @@ const BuyerDashboard = ({ userName }) => {
                     <div key={i.id} className="cart-row">
                       <div className="cart-name">{i.name}</div>
                       <div className="cart-qty">
-                        <button className="qty-btn" onClick={() => updateQty(i.id, Math.max(1, i.qty-1))}>-</button>
+                        <button className="qty-btn" onClick={() => updateQty(i.id, Math.max(1, i.qty - 1))}>-</button>
                         <span className="qty-value">{i.qty}</span>
-                        <button className="qty-btn" onClick={() => updateQty(i.id, i.qty+1)}>+</button>
+                        <button className="qty-btn" onClick={() => updateQty(i.id, i.qty + 1)}>+</button>
                       </div>
                       <div className="cart-price">{i.price * i.qty} DA</div>
                       <button className="remove" onClick={() => removeFromCart(i.id)}>Supprimer</button>
                     </div>
                   ))}
-                  <div className="cart-total">Total : {cart.reduce((s,i)=>s+i.price*i.qty,0)} DA</div>
+                  <div className="cart-total">Total : {cart.reduce((s, i) => s + i.price * i.qty, 0)} DA</div>
                   <button className="checkout" onClick={() => { setCheckout({ open: true }); setCartVisible(false); }}>Passer au paiement</button>
                 </div>
               )}
@@ -289,29 +566,33 @@ const BuyerDashboard = ({ userName }) => {
             <div className="cm-backdrop" onClick={() => setCheckout(null)} />
             <div className="cm-panel">
               <h3>Paiement sécurisé</h3>
-              <p>Montant à régler: <strong>{cart.reduce((s,i)=>s+i.price*i.qty,0)} DA</strong></p>
-              <form onSubmit={async (e) => { e.preventDefault();
-                  setPaymentResult({ success: null, message: 'Traitement en cours...' });
-                  try {
-                    for (const item of cart) {
-                      await createOrder({ productId: item.id, quantity: item.qty });
-                    }
-                    setPaymentResult({ success: true, message: 'Paiement accepté — Merci pour votre commande.' });
-                    setCart([]);
-                    await loadData();
-                    setTimeout(() => {
-                      setCheckout(null);
-                      setPaymentResult(null);
-                    }, 2000);
-                  } catch (err) {
-                    setPaymentResult({ success: false, message: 'Erreur: ' + (err.response?.data?.error || err.message) });
+              <p>Montant à régler: <strong>{cart.reduce((s, i) => s + i.price * i.qty, 0)} DA</strong></p>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setPaymentResult({ success: null, message: 'Traitement en cours...' });
+                try {
+                  for (const item of cart) {
+                    await createOrder({ productId: item.id, quantity: item.qty });
                   }
-                }} className="payment-form">
-                <label>Nom sur la carte<input name="cardName" required/></label>
-                <label>Numéro de carte<input name="cardNumber" inputMode="numeric" pattern="[0-9 ]{13,19}" placeholder="4242 4242 4242 4242" required/></label>
+                  setPaymentResult({ success: true, message: 'Paiement accepté — Merci pour votre commande.' });
+                  toast.success(`✅ Commande validée! ${cart.length} produit(s) commandé(s)`);
+                  setCart([]);
+                  await loadData();
+                  setTimeout(() => {
+                    setCheckout(null);
+                    setPaymentResult(null);
+                  }, 2000);
+                } catch (err) {
+                  const errorMsg = 'Erreur: ' + (err.response?.data?.error || err.message);
+                  setPaymentResult({ success: false, message: errorMsg });
+                  toast.error(errorMsg);
+                }
+              }} className="payment-form">
+                <label>Nom sur la carte<input name="cardName" required /></label>
+                <label>Numéro de carte<input name="cardNumber" inputMode="numeric" pattern="[0-9 ]{13,19}" placeholder="4242 4242 4242 4242" required /></label>
                 <div className="row">
-                  <label>Expiration<input name="expiry" placeholder="MM/AA" required/></label>
-                  <label>CVC<input name="cvc" inputMode="numeric" required/></label>
+                  <label>Expiration<input name="expiry" placeholder="MM/AA" required /></label>
+                  <label>CVC<input name="cvc" inputMode="numeric" required /></label>
                 </div>
                 <div className="modal-actions">
                   <button type="submit" className="btn">Payer</button>
@@ -327,15 +608,15 @@ const BuyerDashboard = ({ userName }) => {
       {/* Product view modal */}
       {productModal && (
         <div className="sd-modal" role="dialog" aria-modal>
-          <div className="sd-modal-backdrop" onClick={()=>setProductModal(null)} />
+          <div className="sd-modal-backdrop" onClick={() => setProductModal(null)} />
           <div className="sd-modal-panel">
             <h3>{productModal.name}</h3>
             <p>{productModal.desc}</p>
             <div>Prix: {productModal.price} DA</div>
             <div>Stock: {productModal.stock ?? '—'}</div>
-            <div style={{marginTop:12}}>
-              <button className="btn" onClick={()=>{ addToCart(productModal); setProductModal(null); }}>Ajouter au panier</button>
-              <button className="btn ghost" onClick={()=>setProductModal(null)} style={{marginLeft:8}}>Fermer</button>
+            <div style={{ marginTop: 12 }}>
+              <button className="btn" onClick={() => { addToCart(productModal); setProductModal(null); }}>Ajouter au panier</button>
+              <button className="btn ghost" onClick={() => setProductModal(null)} style={{ marginLeft: 8 }}>Fermer</button>
             </div>
           </div>
         </div>

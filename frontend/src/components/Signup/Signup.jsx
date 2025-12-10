@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
+import { useToast } from '../../contexts/ToastContext';
 import './Signup.scss';
 
 const Signup = ({ onSwitchToLogin }) => {
+  const toast = useToast();
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: ''
   });
-  // default role is empty — user must choose
-  const [role, setRole] = useState('');
+  // default roles array - buyer is selected by default
+  const [selectedRoles, setSelectedRoles] = useState(['buyer']);
+  const [showRoleModal, setShowRoleModal] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -114,12 +118,39 @@ const Signup = ({ onSwitchToLogin }) => {
 
   // Validate role selection for signup
   const validateRole = () => {
-    if (!role) {
-      setErrors(prev => ({ ...prev, role: 'Please select a role' }));
+    if (selectedRoles.length === 0) {
+      setErrors(prev => ({ ...prev, role: 'Please select at least one role' }));
+      setShowRoleModal(true);
       return false;
     }
     setErrors(prev => ({ ...prev, role: '' }));
     return true;
+  };
+
+  // Handle role checkbox change
+  const handleRoleChange = (roleValue) => {
+    setSelectedRoles(prev => {
+      if (prev.includes(roleValue)) {
+        // Remove role if already selected (but keep at least one)
+        const newRoles = prev.filter(r => r !== roleValue);
+        return newRoles.length > 0 ? newRoles : prev;
+      } else {
+        // Add role if not selected
+        return [...prev, roleValue];
+      }
+    });
+    // Clear role error when user makes selection
+    if (errors.role) {
+      setErrors(prev => ({ ...prev, role: '' }));
+    }
+  };
+
+  // Confirm role selection from modal
+  const confirmRoleSelection = () => {
+    if (selectedRoles.length > 0) {
+      setShowRoleModal(false);
+      setErrors(prev => ({ ...prev, role: '' }));
+    }
   };
 
   // Handle input changes
@@ -157,8 +188,11 @@ const Signup = ({ onSwitchToLogin }) => {
 
     try {
       const { confirmPassword, ...signupData } = formData;
-      // attach role to signup data
-      signupData.role = role;
+      // attach roles array to signup data
+      signupData.roles = selectedRoles;
+
+      console.log('Sending signup data:', signupData);
+      console.log('Selected roles:', selectedRoles);
 
       const response = await axios.post(`${API_BASE_URL}/api/auth/signup`, signupData);
 
@@ -180,10 +214,11 @@ const Signup = ({ onSwitchToLogin }) => {
 
         // Reset form
         setFormData({ name: '', email: '', password: '', confirmPassword: '' });
-        setRole('');
+        setSelectedRoles(['buyer']); // Reset to default
       }
 
       console.log('Signup successful:', response.data);
+      toast.success('✅ Inscription réussie! Vous pouvez vous connecter.');
 
     } catch (error) {
       console.error('Signup error details:', {
@@ -197,9 +232,14 @@ const Signup = ({ onSwitchToLogin }) => {
 
       if (error.response) {
         // Server responded with error status
-        errorMessage = error.response.data?.error ||
-          error.response.data?.message ||
-          `Server error: ${error.response.status}`;
+        if (error.response.data?.details && Array.isArray(error.response.data.details)) {
+          // Show first validation error detail
+          errorMessage = error.response.data.details[0]?.msg || error.response.data?.error;
+        } else {
+          errorMessage = error.response.data?.error ||
+            error.response.data?.message ||
+            `Server error: ${error.response.status}`;
+        }
       } else if (error.request) {
         // Request was made but no response received
         errorMessage = 'Cannot connect to server. Please check if the server is running.';
@@ -213,7 +253,11 @@ const Signup = ({ onSwitchToLogin }) => {
         text: errorMessage
       });
 
+      toast.error(`❌ ${errorMessage}`);
       console.error('Signup error:', error);
+      if (error.response?.data?.details) {
+        console.error('Validation details:', error.response.data.details);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -555,16 +599,23 @@ const Signup = ({ onSwitchToLogin }) => {
             )}
           </div>
 
-          <div className="form-group role-group">
-            <label className="form-label">Rôle</label>
-            <div className="role-options">
-              <label className="role-option">
-                <input type="radio" name="role" value="buyer" checked={role === 'buyer'} onChange={() => setRole('buyer')} /> Acheteur
-              </label>
-              <label className="role-option">
-                <input type="radio" name="role" value="seller" checked={role === 'seller'} onChange={() => setRole('seller')} /> Vendeur
-              </label>
-            </div>
+          {/* Role selection - now as a button to open modal */}
+          <div className="form-group">
+            <label className="form-label">Votre rôle</label>
+            <button
+              type="button"
+              className="role-selector-button"
+              onClick={() => setShowRoleModal(true)}
+            >
+              <span className="role-display">
+                {selectedRoles.length > 0
+                  ? selectedRoles.map(r => r === 'buyer' ? 'Acheteur' : 'Vendeur').join(' + ')
+                  : 'Sélectionner un rôle'}
+              </span>
+              <svg viewBox="0 0 20 20" fill="currentColor" className="role-chevron">
+                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
             {errors.role && (
               <p className="error-message" role="alert">{errors.role}</p>
             )}
@@ -634,76 +685,171 @@ const Signup = ({ onSwitchToLogin }) => {
           )}
         </form>
 
-        {/* NEW: Email OTP Verification Section */}
-        {requiresOTP && (
-          <div className="otp-section">
-            <div className="otp-header">
-              <div className="otp-icon">
-                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h2>Verify Your Email</h2>
-              <p>We've sent a 6-digit code to <strong>{formData.email}</strong></p>
-            </div>
-
-            <form onSubmit={handleVerifyOTP} className="otp-form">
-              <div className="form-group">
-                <label htmlFor="otpCode" className="form-label">
-                  Verification Code
-                </label>
-                <input
-                  type="text"
-                  id="otpCode"
-                  value={otpCode}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                    setOtpCode(value);
-                  }}
-                  className="form-input otp-input"
-                  placeholder="000000"
-                  maxLength="6"
-                  autoComplete="one-time-code"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                />
-              </div>
-
+        {/* Role Selection Modal */}
+        {showRoleModal && (
+          <div className="modal-overlay" onClick={() => setShowRoleModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <button
-                type="submit"
-                className="submit-button"
-                disabled={isLoading || otpCode.length !== 6}
-                aria-busy={isLoading}
+                className="modal-close"
+                onClick={() => setShowRoleModal(false)}
+                aria-label="Close modal"
               >
-                {isLoading ? 'Verifying...' : 'Verify Email'}
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
 
-              <div className="otp-actions">
-                <button
-                  type="button"
-                  onClick={handleResendOTP}
-                  className="resend-button"
-                  disabled={isLoading || resendCooldown > 0}
-                >
-                  {resendCooldown > 0
-                    ? `Resend in ${resendCooldown}s`
-                    : 'Resend Code'}
-                </button>
+              <div className="modal-header">
+                <div className="modal-icon">
+                  <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <h2 className="modal-title">Sélectionnez votre rôle</h2>
+                <p className="modal-subtitle">Vous pouvez choisir les deux rôles si nécessaire</p>
+              </div>
 
+              <div className="modal-body">
+                <div className="modal-role-options">
+                  <label className="modal-role-option">
+                    <input
+                      type="checkbox"
+                      value="buyer"
+                      checked={selectedRoles.includes('buyer')}
+                      onChange={() => handleRoleChange('buyer')}
+                    />
+                    <div className="role-card">
+                      <div className="role-icon">
+                        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </div>
+                      <div className="role-info">
+                        <h3>Acheteur</h3>
+                        <p>Parcourir et acheter des produits</p>
+                      </div>
+                      <div className="role-checkmark">
+                        <svg viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+                  </label>
+
+                  <label className="modal-role-option">
+                    <input
+                      type="checkbox"
+                      value="seller"
+                      checked={selectedRoles.includes('seller')}
+                      onChange={() => handleRoleChange('seller')}
+                    />
+                    <div className="role-card">
+                      <div className="role-icon">
+                        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </div>
+                      <div className="role-info">
+                        <h3>Vendeur</h3>
+                        <p>Vendre et gérer vos produits</p>
+                      </div>
+                      <div className="role-checkmark">
+                        <svg viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="modal-footer">
                 <button
-                  type="button"
-                  onClick={() => {
-                    setRequiresOTP(false);
-                    setOtpCode('');
-                    setMessage({ type: '', text: '' });
-                  }}
-                  className="back-button"
-                  disabled={isLoading}
+                  className="modal-btn-primary"
+                  onClick={confirmRoleSelection}
+                  disabled={selectedRoles.length === 0}
                 >
-                  ← Back to Signup
+                  Confirmer
                 </button>
               </div>
-            </form>
+            </div>
+          </div>
+        )}
+
+        {/* NEW: Email OTP Verification Section */}
+        {requiresOTP && (
+          <div className="modal-overlay">
+            <div className="modal-content otp-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <div className="modal-icon">
+                  <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h2 className="modal-title">Verify Your Email</h2>
+                <p className="modal-subtitle">We've sent a 6-digit code to <strong>{formData.email}</strong></p>
+              </div>
+
+              <form onSubmit={handleVerifyOTP} className="modal-body">
+                <div className="form-group">
+                  <label htmlFor="otpCode" className="form-label">
+                    Verification Code
+                  </label>
+                  <input
+                    type="text"
+                    id="otpCode"
+                    value={otpCode}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                      setOtpCode(value);
+                    }}
+                    className="form-input otp-input"
+                    placeholder="000000"
+                    maxLength="6"
+                    autoComplete="one-time-code"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                  />
+                </div>
+
+                <div className="modal-footer">
+                  <button
+                    type="submit"
+                    className="modal-btn-primary"
+                    disabled={isLoading || otpCode.length !== 6}
+                    aria-busy={isLoading}
+                  >
+                    {isLoading ? 'Verifying...' : 'Verify Email'}
+                  </button>
+
+                  <div className="otp-actions">
+                    <button
+                      type="button"
+                      onClick={handleResendOTP}
+                      className="modal-btn-secondary"
+                      disabled={isLoading || resendCooldown > 0}
+                    >
+                      {resendCooldown > 0
+                        ? `Resend in ${resendCooldown}s`
+                        : 'Resend Code'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRequiresOTP(false);
+                        setOtpCode('');
+                        setMessage({ type: '', text: '' });
+                      }}
+                      className="modal-btn-text"
+                      disabled={isLoading}
+                    >
+                      ← Back to Signup
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 
