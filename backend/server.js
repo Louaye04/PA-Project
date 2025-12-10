@@ -64,8 +64,21 @@ const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
   message: "Too many requests from this IP, please try again later.",
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.originalUrl.startsWith('/api/dh/messages'),
 });
 app.use("/api/", limiter);
+
+// Polling-intensive DH message endpoint gets its own higher limit
+const dhMessageLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 1000, // allow frequent polling without tripping the general limiter
+  message: "Trop de requêtes vers les messages sécurisés, réduisez la fréquence des polling.",
+  standardHeaders: true,
+  legacyHeaders: false
+});
+app.use('/api/dh/messages', dhMessageLimiter);
 
 // Body parser middleware
 app.use(express.json());

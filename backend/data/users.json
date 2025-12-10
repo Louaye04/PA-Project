@@ -61,5 +61,16 @@
     ],
     "role": "buyer",
     "createdAt": "2025-12-10T01:00:06.459Z"
+  },
+  {
+    "id": 7,
+    "email": "ninkopvp@gmail.com",
+    "password": "$2a$10$ZEoCWQ2T5T1Jkcq7AaY2w.Vj/Y/Q.5lEXV8fLITnumUtoTa7p4Ybq",
+    "name": "Seller",
+    "roles": [
+      "seller"
+    ],
+    "role": "seller",
+    "createdAt": "2025-12-10T02:04:29.513Z"
   }
 ]

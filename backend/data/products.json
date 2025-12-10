@@ -58,5 +58,65 @@
     "sellerName": "ninkopvp@gmail.com",
     "createdAt": "2025-12-10T01:05:57.322Z",
     "updatedAt": "2025-12-10T01:08:00.803Z"
+  },
+  {
+    "id": "1765329335169",
+    "name": "cookies",
+    "price": 112,
+    "stock": 99,
+    "desc": "",
+    "image": "",
+    "sellerId": 9,
+    "sellerName": "ninkopvp@gmail.com",
+    "createdAt": "2025-12-10T01:15:35.169Z",
+    "updatedAt": "2025-12-10T01:16:08.988Z"
+  },
+  {
+    "id": "1765329399666",
+    "name": "miami",
+    "price": 1000,
+    "stock": 98,
+    "desc": "",
+    "image": "",
+    "sellerId": 9,
+    "sellerName": "ninkopvp@gmail.com",
+    "createdAt": "2025-12-10T01:16:39.666Z",
+    "updatedAt": "2025-12-10T01:16:59.115Z"
+  },
+  {
+    "id": "1765329541798",
+    "name": "messi",
+    "price": 10000000,
+    "stock": 195,
+    "desc": "",
+    "image": "",
+    "sellerId": 9,
+    "sellerName": "ninkopvp@gmail.com",
+    "createdAt": "2025-12-10T01:19:01.798Z",
+    "updatedAt": "2025-12-10T01:20:24.997Z"
+  },
+  {
+    "id": "1765330048292",
+    "name": "Cr7",
+    "price": 1,
+    "stock": 74,
+    "desc": "",
+    "image": "",
+    "sellerId": 9,
+    "sellerName": "ninkopvp@gmail.com",
+    "createdAt": "2025-12-10T01:27:28.292Z",
+    "updatedAt": "2025-12-10T01:53:07.760Z"
+  },
+  {
+    "id": "1765332392739",
+    "name": "yamal",
+    "price": 10000000,
+    "stock": 98,
+    "desc": "",
+    "image": "",
+    "sellerId": 7,
+    "sellerName": "ninkopvp@gmail.com",
+    "createdAt": "2025-12-10T02:06:32.739Z",
+    "updatedAt": "2025-12-10T02:06:41.700Z"
   }
 ]

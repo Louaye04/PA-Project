@@ -42,6 +42,8 @@ const SecureChat = ({
   const messagesEndRef = useRef(null);
   const pollInterval = useRef(null);
   const sessionIdRef = useRef(null);
+  const keyCheckIntervalRef = useRef(null);
+  const sharedSecretRef = useRef(null);
 
   const updateWebhookIndicator = (status, label) => {
     setWebhookStatus(status);
@@ -84,6 +86,10 @@ const SecureChat = ({
     return () => {
       if (pollInterval.current) {
         clearInterval(pollInterval.current);
+      }
+      if (keyCheckIntervalRef.current) {
+        clearInterval(keyCheckIntervalRef.current);
+        keyCheckIntervalRef.current = null;
       }
       unsubscribeDHSessionActive();
       unsubscribeDHKeySubmitted();
@@ -129,6 +135,10 @@ const SecureChat = ({
       console.log('🔐 [SecureChat] Création ou récupération d\'une session DH...');
       console.log('   Current User:', currentUser);
       console.log('   Other User:', otherUser);
+      if (keyCheckIntervalRef.current) {
+        clearInterval(keyCheckIntervalRef.current);
+        keyCheckIntervalRef.current = null;
+      }
       console.log('   Vendeur ID:', sellerId);
       console.log('   Acheteur ID:', buyerId);
       console.log('   Produit ID:', productId);
@@ -258,6 +268,10 @@ const SecureChat = ({
 
   const computeSecretImmediately = async (sessionId, myKeys, params, otherPublicKey) => {
     try {
+      if (keyCheckIntervalRef.current) {
+        clearInterval(keyCheckIntervalRef.current);
+        keyCheckIntervalRef.current = null;
+      }
       setKeyExchangeProgress(80);
 
       console.log('🔐 [SecureChat] Calcul immédiat du secret partagé...');
@@ -272,6 +286,7 @@ const SecureChat = ({
       );
 
       setSharedSecret(secret);
+      sharedSecretRef.current = secret;
       setKeyExchangeProgress(100);
       setSessionStatus('active');
 
@@ -309,6 +324,7 @@ const SecureChat = ({
 
           if (session.status === 'active') {
             clearInterval(checkInterval);
+            keyCheckIntervalRef.current = null;
 
             const otherPublicKey = session.userRole === 'seller'
               ? session.buyerPublicKey
@@ -327,6 +343,7 @@ const SecureChat = ({
             );
 
             setSharedSecret(secret);
+            sharedSecretRef.current = secret;
             setKeyExchangeProgress(100);
             setSessionStatus('active');
 
@@ -342,12 +359,19 @@ const SecureChat = ({
 
         if (attempts >= maxAttempts) {
           clearInterval(checkInterval);
+          keyCheckIntervalRef.current = null;
           setError(`Timeout: ${currentUser.role === 'seller' ? "L'acheteur" : "Le vendeur"} n'a pas rejoint le canal sécurisé dans les 2 minutes. Assurez-vous que l'autre partie ouvre également le chat sécurisé.`);
           setSessionStatus('error');
         }
       }, 1000);
 
+      keyCheckIntervalRef.current = checkInterval;
+
     } catch (err) {
+      if (keyCheckIntervalRef.current) {
+        clearInterval(keyCheckIntervalRef.current);
+        keyCheckIntervalRef.current = null;
+      }
       console.error('❌ [SecureChat] Erreur calcul secret partagé:', err);
       setError('Erreur lors du calcul de la clé partagée');
       setSessionStatus('error');
@@ -356,6 +380,9 @@ const SecureChat = ({
 
   const startMessagePolling = (sessionId) => {
     fetchMessages(sessionId);
+    if (pollInterval.current) {
+      clearInterval(pollInterval.current);
+    }
     pollInterval.current = setInterval(() => {
       fetchMessages(sessionId);
     }, 2000);
@@ -363,6 +390,13 @@ const SecureChat = ({
 
   const fetchMessages = async (sessionId) => {
     try {
+      // Use ref to get current shared secret (avoid stale closure)
+      const currentSecret = sharedSecretRef.current;
+      if (!currentSecret) {
+        console.warn('⚠️ [SecureChat] fetchMessages appelé sans secret partagé');
+        return;
+      }
+
       const response = await getEncryptedMessages(sessionId, token);
       const encryptedMessages = response.data;
 
@@ -373,7 +407,7 @@ const SecureChat = ({
               msg.encryptedContent,
               msg.iv,
               msg.authTag,
-              sharedSecret
+              currentSecret
             );
 
             return {

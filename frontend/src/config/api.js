@@ -6,7 +6,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:5000";
 
 // Configure axios defaults
 axios.defaults.baseURL = API_BASE_URL;
-axios.defaults.timeout = 10000; // 10 seconds timeout
+axios.defaults.timeout = 30000; // 30 seconds timeout (increased for DH key exchange)
 axios.defaults.headers.common["Content-Type"] = "application/json";
 
 // Add request interceptor for debugging

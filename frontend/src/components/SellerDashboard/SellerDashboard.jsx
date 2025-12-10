@@ -547,11 +547,26 @@ const SellerDashboard = ({ userName }) => {
         </div>
       )}
 
-      {secureChatOpen && chatOrder && (
+      {secureChatOpen && chatOrder && (() => {
+        // Décoder le JWT pour obtenir l'ID utilisateur numérique
+        const token = localStorage.getItem('authToken') || '';
+        const userEmail = localStorage.getItem('userEmail') || 'seller@example.com';
+        let currentUserId = userEmail;
+        
+        try {
+          if (token) {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            currentUserId = payload.id || payload.email;
+          }
+        } catch (e) {
+          console.error('Erreur décodage token:', e);
+        }
+        
+        return (
         <SecureChat
           currentUser={{
-            id: localStorage.getItem('userEmail') || 'seller@example.com',
-            email: localStorage.getItem('userEmail') || 'seller@example.com',
+            id: currentUserId,
+            email: userEmail,
             name: userName || 'Vendeur',
             role: 'seller'
           }}
@@ -562,13 +577,14 @@ const SellerDashboard = ({ userName }) => {
             role: 'buyer'
           }}
           productId={chatOrder.productId.toString()}
-          token={localStorage.getItem('authToken') || ''}
+          token={token}
           onClose={() => {
             setSecureChatOpen(false);
             setChatOrder(null);
           }}
         />
-      )}
+        );
+      })()}
     </div>
   );
 };
