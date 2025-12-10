@@ -60,6 +60,7 @@
     "updatedAt": "2025-12-04T21:36:20.485Z"
   },
   {
+<<<<<<< HEAD
     "id": "1765308743666",
     "buyerId": 8,
     "buyerName": "khobziabderrahmane@gmail.com",
@@ -1063,5 +1064,50 @@
     "status": "En attente",
     "createdAt": "2025-12-10T00:32:05.265Z",
     "updatedAt": "2025-12-10T00:32:05.265Z"
+=======
+    "id": "1765309126270",
+    "buyerId": 10,
+    "buyerName": "babaamerabdenour6@gmail.com",
+    "sellerId": 9,
+    "sellerName": "ninkopvp@gmail.com",
+    "productId": "1764767926679",
+    "productName": "zzzsz",
+    "quantity": 5,
+    "price": 23,
+    "totalPrice": 115,
+    "status": "En attente",
+    "createdAt": "2025-12-09T19:38:46.270Z",
+    "updatedAt": "2025-12-09T19:38:46.270Z"
+  },
+  {
+    "id": "1765309162443",
+    "buyerId": 10,
+    "buyerName": "babaamerabdenour6@gmail.com",
+    "sellerId": 9,
+    "sellerName": "ninkopvp@gmail.com",
+    "productId": "1764767926679",
+    "productName": "zzzsz",
+    "quantity": 1,
+    "price": 23,
+    "totalPrice": 23,
+    "status": "En attente",
+    "createdAt": "2025-12-09T19:39:22.443Z",
+    "updatedAt": "2025-12-09T19:39:22.443Z"
+  },
+  {
+    "id": "1765309206334",
+    "buyerId": 10,
+    "buyerName": "babaamerabdenour6@gmail.com",
+    "sellerId": 7,
+    "sellerName": "babaamerabdenour44@gmail.com",
+    "productId": "1765309195904",
+    "productName": "test",
+    "quantity": 1,
+    "price": 15800,
+    "totalPrice": 15800,
+    "status": "En attente",
+    "createdAt": "2025-12-09T19:40:06.334Z",
+    "updatedAt": "2025-12-09T19:40:06.334Z"
+>>>>>>> 759a47eb324414a1b039db0442e8cb1cc0f42c2e
   }
 ]

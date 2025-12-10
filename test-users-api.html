@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Users API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+
+        button {
+            background: linear-gradient(135deg, #ff6b35, #f7931e);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        #result {
+            background: #2a2a2a;
+            border: 1px solid #ff6b35;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .success {
+            color: #10b981;
+        }
+
+        .error {
+            color: #ef4444;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+        }
+
+        th {
+            background: rgba(255, 107, 53, 0.2);
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background: rgba(255, 107, 53, 0.1);
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-right: 4px;
+        }
+
+        .buyer {
+            background: #3b82f6;
+        }
+
+        .seller {
+            background: #10b981;
+        }
+
+        .admin {
+            background: #f59e0b;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🧪 Test Users API</h1>
+    <p>This page tests the backend API endpoints without authentication.</p>
+
+    <div>
+        <button onclick="testConnection()">Test Backend Connection</button>
+        <button onclick="fetchUsers()">Fetch Users (No Auth)</button>
+        <button onclick="fetchUsersAuth()">Fetch Users (With Auth)</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:5000';
+
+        function clearResults() {
+            document.getElementById('result').innerHTML = '';
+        }
+
+        function showResult(title, data, isError = false) {
+            const resultDiv = document.getElementById('result');
+            const className = isError ? 'error' : 'success';
+            resultDiv.innerHTML = `
+                <h3 class="${className}">${title}</h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+        }
+
+        async function testConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/api/health`);
+                const data = await response.json();
+                showResult('✓ Backend is Running!', data);
+            } catch (error) {
+                showResult('✗ Backend Connection Failed', {
+                    error: error.message,
+                    hint: 'Make sure the backend server is running on port 5000'
+                }, true);
+            }
+        }
+
+        async function fetchUsers() {
+            try {
+                const response = await fetch(`${API_BASE}/api/users/test`);
+                const data = await response.json();
+
+                if (data.success) {
+                    displayUsersTable(data.users, data.total);
+                } else {
+                    showResult('✗ Failed to Fetch Users', data, true);
+                }
+            } catch (error) {
+                showResult('✗ Error Fetching Users', {
+                    error: error.message,
+                    hint: 'Check if backend is running and the route exists'
+                }, true);
+            }
+        }
+
+        async function fetchUsersAuth() {
+            const token = prompt('Enter your auth token (from localStorage):');
+            if (!token) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/users`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    displayUsersTable(data.users, data.total);
+                } else {
+                    showResult('✗ Authentication Failed', data, true);
+                }
+            } catch (error) {
+                showResult('✗ Error Fetching Users', {
+                    error: error.message
+                }, true);
+            }
+        }
+
+        function displayUsersTable(users, total) {
+            const resultDiv = document.getElementById('result');
+
+            let html = `
+                <h3 class="success">✓ Found ${total} Users</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Roles</th>
+                            <th>City</th>
+                            <th>MFA</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            users.forEach(user => {
+                const roles = (user.roles || []).map(role =>
+                    `<span class="role-badge ${role}">${role}</span>`
+                ).join('');
+
+                html += `
+                    <tr>
+                        <td>#${user.id}</td>
+                        <td>${user.name || 'N/A'}</td>
+                        <td>${user.email}</td>
+                        <td>${roles}</td>
+                        <td>${user.birthCity || 'N/A'}</td>
+                        <td>${user.mfaEnabled ? '✓' : '✗'}</td>
+                        <td>${new Date(user.createdAt).toLocaleDateString()}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            resultDiv.innerHTML = html;
+        }
+
+        // Auto-test on load
+        window.onload = () => {
+            console.log('Testing backend connection...');
+            testConnection();
+        };
+    </script>
+</body>
+
+</html>

@@ -1,17 +1,21 @@
 .app {
   min-height: 100vh;
+  width: 100%;
+  height: 100%;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
+  margin: 0;
+  background: linear-gradient(135deg, #0f172a 0%, #1a2332 50%, #0d1117 100%);
 }
 
-/* Apply the purple gradient only when admin is NOT active. */
+/* Apply the dark gradient background */
 .app:not(.admin-active) {
-  background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary) 100%);
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0d0d0d 100%);
 }
 
-/* Ensure admin view has a neutral background (defeat other gradients if needed). */
+/* Ensure admin view has dark background */
 .app.admin-active {
-  background: var(--bg-100) !important;
+  background: #0a0a0a !important;
 }

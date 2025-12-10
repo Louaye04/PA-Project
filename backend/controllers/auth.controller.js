@@ -11,22 +11,26 @@ exports.signup = async (req, res, next) => {
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log("Signup validation failed:", errors.array());
+      console.log("Request body:", req.body);
       return res.status(400).json({
         error: "Validation failed",
         details: errors.array(),
       });
     }
 
-    const { name, email, password, role, birthCity } = req.body;
+    const { name, email, password, roles, role, birthCity } = req.body;
 
-    // Log removed
+    console.log("Signup request - roles:", roles, "role:", role);
 
-    // Register user (persist role) - user is not fully activated yet
+    // Register user (persist roles array or single role) - user is not fully activated yet
+    // Support both new 'roles' array and old 'role' string for backward compatibility
+    const userRoles = roles || (role ? [role] : ["buyer"]);
     const result = await authService.registerUser(
       name,
       email,
       password,
-      role,
+      userRoles,
       birthCity
     );
 
@@ -44,7 +48,8 @@ exports.signup = async (req, res, next) => {
       user: {
         email: result.user.email,
         name: result.user.name,
-        role: result.user.role,
+        roles: result.user.roles || [result.user.role],
+        role: result.user.role, // Keep for backward compatibility
       },
     });
   } catch (error) {
@@ -89,8 +94,22 @@ exports.login = async (req, res, next) => {
       password,
       requestedRole
     );
+    // If user is admin, bypass OTP and issue token immediately
+    const userRoles =
+      result.user.roles || (result.user.role ? [result.user.role] : ["buyer"]);
+    if (userRoles.includes("admin")) {
+      // Issue token directly for admin
+      const issued = authService.issueTokenForUser(result.user, requestedRole);
+      return res.status(200).json({
+        success: true,
+        requiresOTP: false,
+        message: "Login successful",
+        token: issued.token,
+        user: issued.user,
+      });
+    }
 
-    // Send OTP email for verification
+    // Send OTP email for verification for non-admin users
     const ipAddress = req.ip || req.connection.remoteAddress;
     const otpResult = await authService.sendLoginOTP(
       email,
@@ -110,7 +129,8 @@ exports.login = async (req, res, next) => {
       user: {
         email: result.user.email,
         name: result.user.name,
-        role: result.user.role,
+        roles: result.user.roles || [result.user.role],
+        role: requestedRole || result.user.role, // Selected role
       },
     });
   } catch (error) {
@@ -134,7 +154,7 @@ exports.verifyOTP = async (req, res, next) => {
       });
     }
 
-    const { email, otp, sessionId } = req.body;
+    const { email, otp, sessionId, selectedRole } = req.body;
 
     if (!email || !otp) {
       return res.status(400).json({
@@ -142,8 +162,13 @@ exports.verifyOTP = async (req, res, next) => {
       });
     }
 
-    // Verify OTP and issue JWT token
-    const result = await authService.verifyEmailOTP(email, otp, sessionId);
+    // Verify OTP and issue JWT token with selected role
+    const result = await authService.verifyEmailOTP(
+      email,
+      otp,
+      sessionId,
+      selectedRole
+    );
 
     res.status(200).json({
       success: true,

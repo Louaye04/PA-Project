@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import API_BASE_URL from '../../config/api';
+import { useToast } from '../../contexts/ToastContext';
 import './Login.scss';
 
 const Login = ({ onSwitchToSignup, onLoginSuccess }) => {
+  const toast = useToast();
+
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -18,6 +21,11 @@ const Login = ({ onSwitchToSignup, onLoginSuccess }) => {
   const [sessionId, setSessionId] = useState('');
   const [canResendAt, setCanResendAt] = useState(null);
   const [resendCooldown, setResendCooldown] = useState(0);
+
+  // NEW: Role selection state for multi-role users
+  const [availableRoles, setAvailableRoles] = useState([]);
+  const [selectedRole, setSelectedRole] = useState('');
+  const [showRoleSelection, setShowRoleSelection] = useState(false);
 
   const [hasHeroImage, setHasHeroImage] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -87,6 +95,20 @@ const Login = ({ onSwitchToSignup, onLoginSuccess }) => {
         setRequiresOTP(true);
         setSessionId(response.data.sessionId);
         setCanResendAt(response.data.canResendAt);
+
+        // Check if user has multiple roles
+        const userRoles = response.data.user?.roles || [response.data.user?.role];
+        setAvailableRoles(userRoles);
+
+        // Auto-select buyer if available, otherwise first role
+        const defaultRole = userRoles.includes('buyer') ? 'buyer' : userRoles[0];
+        setSelectedRole(defaultRole);
+
+        // Show role selection if user has multiple roles
+        if (userRoles.length > 1) {
+          setShowRoleSelection(true);
+        }
+
         setMessage({
           type: 'info',
           text: response.data.message || 'Verification code sent to your email'
@@ -98,7 +120,7 @@ const Login = ({ onSwitchToSignup, onLoginSuccess }) => {
       // Fallback for backward compatibility (if OTP not yet implemented)
       if (response.data.token) {
         localStorage.setItem('authToken', response.data.token);
-        
+
         // Persist user data
         try {
           const emailForStore = response.data?.user?.email || formData.email;
@@ -119,6 +141,7 @@ const Login = ({ onSwitchToSignup, onLoginSuccess }) => {
       setFormData({ email: '', password: '' });
 
       console.log('Login successful:', response.data);
+      toast.success('✅ Connexion réussie! Bienvenue.');
 
       // Navigate to dashboard after a short delay
       setTimeout(() => {
@@ -145,9 +168,14 @@ const Login = ({ onSwitchToSignup, onLoginSuccess }) => {
 
       if (error.response) {
         // Server responded with error status
-        errorMessage = error.response.data?.error ||
-          error.response.data?.message ||
-          `Server error: ${error.response.status}`;
+        if (error.response.data?.details && Array.isArray(error.response.data.details)) {
+          // Show first validation error detail
+          errorMessage = error.response.data.details[0]?.msg || error.response.data?.error;
+        } else {
+          errorMessage = error.response.data?.error ||
+            error.response.data?.message ||
+            `Server error: ${error.response.status}`;
+        }
       } else if (error.request) {
         // Request was made but no response received
         errorMessage = 'Cannot connect to server. Please check if the server is running.';
@@ -161,7 +189,11 @@ const Login = ({ onSwitchToSignup, onLoginSuccess }) => {
         text: errorMessage
       });
 
+      toast.error(`❌ ${errorMessage}`);
       console.error('Login error:', error);
+      if (error.response?.data?.details) {
+        console.error('Validation details:', error.response.data.details);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -186,13 +218,14 @@ const Login = ({ onSwitchToSignup, onLoginSuccess }) => {
       const response = await axios.post(`${API_BASE_URL}/api/auth/verify-otp`, {
         email: formData.email,
         otp: otpCode,
-        sessionId: sessionId
+        sessionId: sessionId,
+        selectedRole: selectedRole // Send selected role for JWT token
       });
 
       // Store token and user data
       if (response.data.token) {
         localStorage.setItem('authToken', response.data.token);
-        
+
         try {
           const emailForStore = response.data?.user?.email || formData.email;
           const name = response.data?.user?.name || response.data?.user?.email || formData.email;
@@ -213,6 +246,9 @@ const Login = ({ onSwitchToSignup, onLoginSuccess }) => {
       setOtpCode('');
       setRequiresOTP(false);
       setSessionId('');
+      setAvailableRoles([]);
+      setSelectedRole('');
+      setShowRoleSelection(false);
 
       // Navigate to dashboard after a short delay
       setTimeout(() => {
@@ -536,76 +572,137 @@ const Login = ({ onSwitchToSignup, onLoginSuccess }) => {
           {/* ============================================ */}
         </form>
 
-        {/* NEW: Email OTP Verification Section */}
+        {/* NEW: Email OTP Verification Modal */}
         {requiresOTP && (
-          <div className="otp-section">
-            <div className="otp-header">
-              <div className="otp-icon">
-                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
+          <div className="modal-overlay">
+            <div className="modal-content otp-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <div className="modal-icon">
+                  <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h2 className="modal-title">Verify Your Email</h2>
+                <p className="modal-subtitle">We've sent a 6-digit code to <strong>{formData.email}</strong></p>
               </div>
-              <h2>Verify Your Email</h2>
-              <p>We've sent a 6-digit code to <strong>{formData.email}</strong></p>
+
+              <form onSubmit={handleVerifyOTP} className="modal-body">
+                {/* Role selection - only show if user has multiple roles */}
+                {showRoleSelection && availableRoles.length > 1 && (
+                  <div className="form-group role-group">
+                    <label className="form-label">Sélectionner votre rôle</label>
+                    <div className="modal-role-options-inline">
+                      {availableRoles.includes('buyer') && (
+                        <label className="modal-role-option-inline">
+                          <input
+                            type="radio"
+                            name="loginRole"
+                            value="buyer"
+                            checked={selectedRole === 'buyer'}
+                            onChange={(e) => setSelectedRole(e.target.value)}
+                          />
+                          <div className="role-card-inline">
+                            <div className="role-icon-inline">
+                              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                              </svg>
+                            </div>
+                            <span>Acheteur</span>
+                            <div className="role-checkmark-inline">
+                              <svg viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          </div>
+                        </label>
+                      )}
+                      {availableRoles.includes('seller') && (
+                        <label className="modal-role-option-inline">
+                          <input
+                            type="radio"
+                            name="loginRole"
+                            value="seller"
+                            checked={selectedRole === 'seller'}
+                            onChange={(e) => setSelectedRole(e.target.value)}
+                          />
+                          <div className="role-card-inline">
+                            <div className="role-icon-inline">
+                              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                              </svg>
+                            </div>
+                            <span>Vendeur</span>
+                            <div className="role-checkmark-inline">
+                              <svg viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                          </div>
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="form-group">
+                  <label htmlFor="otpCode" className="form-label">
+                    Verification Code
+                  </label>
+                  <input
+                    type="text"
+                    id="otpCode"
+                    value={otpCode}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                      setOtpCode(value);
+                    }}
+                    className="form-input otp-input"
+                    placeholder="000000"
+                    maxLength="6"
+                    autoComplete="one-time-code"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                  />
+                </div>
+
+                <div className="modal-footer">
+                  <button
+                    type="submit"
+                    className="modal-btn-primary"
+                    disabled={isLoading || otpCode.length !== 6}
+                    aria-busy={isLoading}
+                  >
+                    {isLoading ? 'Verifying...' : 'Verify & Login'}
+                  </button>
+
+                  <div className="otp-actions">
+                    <button
+                      type="button"
+                      onClick={handleResendOTP}
+                      className="modal-btn-secondary"
+                      disabled={isLoading || resendCooldown > 0}
+                    >
+                      {resendCooldown > 0
+                        ? `Resend in ${resendCooldown}s`
+                        : 'Resend Code'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRequiresOTP(false);
+                        setOtpCode('');
+                        setMessage({ type: '', text: '' });
+                      }}
+                      className="modal-btn-text"
+                      disabled={isLoading}
+                    >
+                      ← Back to Login
+                    </button>
+                  </div>
+                </div>
+              </form>
             </div>
-
-            <form onSubmit={handleVerifyOTP} className="otp-form">
-              <div className="form-group">
-                <label htmlFor="otpCode" className="form-label">
-                  Verification Code
-                </label>
-                <input
-                  type="text"
-                  id="otpCode"
-                  value={otpCode}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                    setOtpCode(value);
-                  }}
-                  className="form-input otp-input"
-                  placeholder="000000"
-                  maxLength="6"
-                  autoComplete="one-time-code"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="submit-button"
-                disabled={isLoading || otpCode.length !== 6}
-                aria-busy={isLoading}
-              >
-                {isLoading ? 'Verifying...' : 'Verify & Login'}
-              </button>
-
-              <div className="otp-actions">
-                <button
-                  type="button"
-                  onClick={handleResendOTP}
-                  className="resend-button"
-                  disabled={isLoading || resendCooldown > 0}
-                >
-                  {resendCooldown > 0
-                    ? `Resend in ${resendCooldown}s`
-                    : 'Resend Code'}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRequiresOTP(false);
-                    setOtpCode('');
-                    setMessage({ type: '', text: '' });
-                  }}
-                  className="back-button"
-                  disabled={isLoading}
-                >
-                  ← Back to Login
-                </button>
-              </div>
-            </form>
           </div>
         )}
 

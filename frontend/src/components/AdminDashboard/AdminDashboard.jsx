@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import './AdminDashboard.scss';
 import Logo from '../Logo/Logo';
+import API_BASE_URL from '../../config/api';
 
 const AdminDashboard = ({ userName }) => {
   const [tab, setTab] = useState('dashboard');
+  const [users, setUsers] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
 
   // derive a friendly first name from the provided userName or stored token/email
   const getFirstName = (raw) => {
@@ -31,7 +39,7 @@ const AdminDashboard = ({ userName }) => {
 
   const firstName = getFirstName(storedName);
 
-  // static sample data for orders and clients (demo)
+  // static sample data for orders (demo)
   const recentOrders = [
     { name: 'Réfrigérateur Star', price: '78 000 DA', payment: 'Livrée', status: 'Livrée' },
     { name: 'Ordinateur Dell', price: '18 000 DA', payment: 'Dû', status: 'En attente' },
@@ -40,21 +48,187 @@ const AdminDashboard = ({ userName }) => {
     { name: 'Sac à dos', price: '6 000 DA', payment: 'Livrée', status: 'Livrée' }
   ];
 
-  const recentClients = [
-    { name: 'David Amit' },
-    { name: 'Sara Ben' },
-    { name: 'Kamel O.' },
-    { name: 'Lina R.' }
-  ];
+  // Fetch users and stats from API
+  useEffect(() => {
+    fetchUsersData();
+  }, []);
+
+  const fetchUsersData = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('authToken');
+
+      console.log('Fetching users with token:', token ? 'Token exists' : 'No token');
+      console.log('API URL:', `${API_BASE_URL}/api/users`);
+
+      let usersRes, statsRes;
+
+      try {
+        // Try with authentication first
+        [usersRes, statsRes] = await Promise.all([
+          axios.get(`${API_BASE_URL}/api/users`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get(`${API_BASE_URL}/api/users/stats`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
+      } catch (authError) {
+        console.warn('Auth request failed, trying test endpoint:', authError.response?.status);
+
+        // If auth fails, try test endpoint as fallback
+        if (authError.response?.status === 401 || authError.response?.status === 403) {
+          console.log('Trying unauthenticated test endpoint...');
+          usersRes = await axios.get(`${API_BASE_URL}/api/users/test`);
+
+          // Calculate stats from users data
+          const users = usersRes.data.users || [];
+          const calculatedStats = {
+            total: users.length,
+            buyers: 0,
+            sellers: 0,
+            admins: 0,
+            both: 0,
+            mfaEnabled: 0
+          };
+
+          users.forEach(user => {
+            const userRoles = user.roles || [];
+            if (userRoles.includes('admin')) calculatedStats.admins++;
+            if (userRoles.includes('buyer') && userRoles.includes('seller')) {
+              calculatedStats.both++;
+            } else if (userRoles.includes('buyer')) {
+              calculatedStats.buyers++;
+            } else if (userRoles.includes('seller')) {
+              calculatedStats.sellers++;
+            }
+            if (user.mfaEnabled) calculatedStats.mfaEnabled++;
+          });
+
+          statsRes = { data: { stats: calculatedStats } };
+        } else {
+          throw authError;
+        }
+      }
+
+      console.log('Users response:', usersRes.data);
+      console.log('Stats response:', statsRes.data);
+
+      const fetchedUsers = usersRes.data.users || [];
+      const fetchedStats = statsRes.data.stats || {};
+
+      console.log('Setting users:', fetchedUsers.length, 'users');
+
+      // Hide admin users from the table (do not show admin accounts)
+      const visibleUsers = fetchedUsers.filter(u => {
+        const roles = u.roles || (u.role ? [u.role] : []);
+        return !roles.includes('admin');
+      });
+
+      console.log('Visible users after filtering admins:', visibleUsers.length);
+
+      setUsers(visibleUsers);
+      // keep original stats object for backend-aware info, but UI metrics use visible users
+      setStats(fetchedStats);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      console.error('Error details:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      console.error('Error message:', error.message);
+
+      // Set empty arrays to show the UI even on error
+      setUsers([]);
+      setStats({
+        total: 0,
+        buyers: 0,
+        sellers: 0,
+        admins: 0,
+        both: 0,
+        mfaEnabled: 0
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filtering and sorting
+  const getFilteredUsers = () => {
+    let filtered = [...users];
+
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter(user =>
+        user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.birthCity?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Apply role filter
+    if (roleFilter !== 'all') {
+      filtered = filtered.filter(user => {
+        const userRoles = user.roles || [];
+        if (roleFilter === 'both') {
+          return userRoles.includes('buyer') && userRoles.includes('seller');
+        }
+        return userRoles.includes(roleFilter);
+      });
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aVal = a[sortConfig.key];
+      let bVal = b[sortConfig.key];
+
+      // Handle special cases
+      if (sortConfig.key === 'roles') {
+        aVal = (a.roles || []).join(',');
+        bVal = (b.roles || []).join(',');
+      }
+
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return filtered;
+  };
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const getRoleBadges = (roles) => {
+    if (!roles || roles.length === 0) return <span className="role-badge buyer">Buyer</span>;
+
+    return roles.map((role, idx) => (
+      <span key={idx} className={`role-badge ${role}`}>
+        {role.charAt(0).toUpperCase() + role.slice(1)}
+      </span>
+    ));
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
 
   useEffect(() => {
-    // Ensure admin view uses a full-page neutral background and clears any previous image/background
+    // Ensure admin view uses dark background
     const prevBodyBg = document.body.style.background;
     const prevDocBg = document.documentElement.style.background;
 
-    // Apply a neutral light background to entire page (covers edges)
-    document.body.style.background = 'var(--bg-100)';
-    document.documentElement.style.background = 'var(--bg-100)';
+    // Apply dark gradient background to entire page
+    document.body.style.background = 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0d0d0d 100%)';
+    document.documentElement.style.background = 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0d0d0d 100%)';
 
     // mark global elements so admin-specific CSS can override app-level backgrounds
     const html = document.documentElement;
@@ -79,6 +253,15 @@ const AdminDashboard = ({ userName }) => {
 
   const [collapsed, setCollapsed] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
+
+  // Debug: Log state changes
+  useEffect(() => {
+    console.log('=== AdminDashboard State ===');
+    console.log('Users:', users.length);
+    console.log('Stats:', stats);
+    console.log('Loading:', loading);
+    console.log('Current tab:', tab);
+  }, [users, stats, loading, tab]);
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
@@ -132,21 +315,18 @@ const AdminDashboard = ({ userName }) => {
           <div className="topbar-right">
             <div className="metrics">
               <div className="metric">
-                <div className="metric-value">1,504</div>
-                <div className="metric-label">Vues quotidiennes</div>
+                <div className="metric-value">{users.length}</div>
+                <div className="metric-label">Visible Users</div>
               </div>
               <div className="metric">
-                <div className="metric-value">80</div>
-                <div className="metric-label">Ventes</div>
+                <div className="metric-value">{users.filter(u => (u.roles || []).includes('buyer')).length}</div>
+                <div className="metric-label">Buyers</div>
               </div>
               <div className="metric">
-                <div className="metric-value">284</div>
-                <div className="metric-label">Commentaires</div>
+                <div className="metric-value">{users.filter(u => (u.roles || []).includes('seller')).length}</div>
+                <div className="metric-label">Sellers</div>
               </div>
-              <div className="metric metric-revenue">
-                <div className="metric-value">7,842 DA</div>
-                <div className="metric-label">Revenus</div>
-              </div>
+              {/* Admins are hidden from the UI; no metric displayed */}
             </div>
             <button className="top-logout" onClick={handleLogout}>Se déconnecter</button>
           </div>
@@ -176,7 +356,7 @@ const AdminDashboard = ({ userName }) => {
                           <td>{o.name}</td>
                           <td>{o.price}</td>
                           <td>{o.payment}</td>
-                          <td><span className={`status ${o.status.replace(/\s+/g,'').toLowerCase()}`}>{o.status}</span></td>
+                          <td><span className={`status ${o.status.replace(/\s+/g, '').toLowerCase()}`}>{o.status}</span></td>
                         </tr>
                       ))}
                     </tbody>
@@ -187,17 +367,26 @@ const AdminDashboard = ({ userName }) => {
               <aside className="content-right">
                 <div className="card clients-card">
                   <h4>Clients récents</h4>
-                  <ul className="clients-list">
-                    {recentClients.map((c, i) => (
-                      <li key={i} className="client-row">
-                        <div className="avatar">{c.name.split(' ')[0].charAt(0)}</div>
-                        <div className="client-info">
-                          <div className="client-name">{c.name}</div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                  <button className="clients-cta">Clients</button>
+                  {loading ? (
+                    <div className="loading-text">Chargement...</div>
+                  ) : (
+                    <>
+                      <ul className="clients-list">
+                        {users.slice(0, 5).map((user) => (
+                          <li key={user.id} className="client-row">
+                            <div className="avatar">
+                              {user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="client-info">
+                              <div className="client-name">{user.name || user.email.split('@')[0]}</div>
+                              <div className="client-roles">{getRoleBadges(user.roles)}</div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                      <button className="clients-cta" onClick={() => setTab('clients')}>Voir tous les clients</button>
+                    </>
+                  )}
                 </div>
               </aside>
             </>
@@ -206,18 +395,118 @@ const AdminDashboard = ({ userName }) => {
           {tab === 'clients' && (
             <div className="content-left full">
               <div className="card clients-full-card">
-                <div className="card-header"><h3>Liste des clients</h3></div>
-                <ul className="clients-list full-list">
-                  {recentClients.map((c, i) => (
-                    <li key={i} className="client-row">
-                      <div className="avatar">{c.name.split(' ')[0].charAt(0)}</div>
-                      <div className="client-info">
-                        <div className="client-name">{c.name}</div>
-                        <div className="client-email">{c.email || `${c.name.split(' ')[0].toLowerCase()}@example.com`}</div>
+                <div className="card-header">
+                  <h3>Gestion des Clients</h3>
+                  <button className="small" onClick={fetchUsersData}>🔄 Actualiser</button>
+                </div>
+
+                {/* Filters and Search */}
+                <div className="table-controls">
+                  <div className="search-box">
+                    <input
+                      type="text"
+                      placeholder="🔍 Rechercher par nom, email ou ville..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <div className="filter-buttons">
+                    <button
+                      className={`filter-btn ${roleFilter === 'all' ? 'active' : ''}`}
+                      onClick={() => setRoleFilter('all')}
+                    >
+                      Tous ({users.length})
+                    </button>
+                    <button
+                      className={`filter-btn ${roleFilter === 'buyer' ? 'active' : ''}`}
+                      onClick={() => setRoleFilter('buyer')}
+                    >
+                      Acheteurs ({stats?.buyers || 0})
+                    </button>
+                    <button
+                      className={`filter-btn ${roleFilter === 'seller' ? 'active' : ''}`}
+                      onClick={() => setRoleFilter('seller')}
+                    >
+                      Vendeurs ({stats?.sellers || 0})
+                    </button>
+                    <button
+                      className={`filter-btn ${roleFilter === 'both' ? 'active' : ''}`}
+                      onClick={() => setRoleFilter('both')}
+                    >
+                      Les deux ({stats?.both || 0})
+                    </button>
+                    {/* Admin filter removed - admins are hidden from the clients table */}
+                  </div>
+                </div>
+
+                {/* Users Table */}
+                {loading ? (
+                  <div className="loading-text">Chargement des données...</div>
+                ) : users.length === 0 ? (
+                  <div className="no-results">
+                    <p>Aucune donnée disponible. Vérifiez que :</p>
+                    <ul style={{ textAlign: 'left', display: 'inline-block', marginTop: '10px' }}>
+                      <li>Le backend est démarré</li>
+                      <li>Vous êtes connecté en tant qu'admin</li>
+                      <li>Le fichier users.json contient des données</li>
+                    </ul>
+                    <button className="small" onClick={fetchUsersData} style={{ marginTop: '20px' }}>
+                      🔄 Réessayer
+                    </button>
+                  </div>
+                ) : (
+                  <div className="table-wrapper">
+                    <table className="users-table">
+                      <thead>
+                        <tr>
+                          <th onClick={() => handleSort('id')} className="sortable">
+                            ID {sortConfig.key === 'id' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                          </th>
+                          <th onClick={() => handleSort('name')} className="sortable">
+                            Nom {sortConfig.key === 'name' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                          </th>
+                          <th onClick={() => handleSort('email')} className="sortable">
+                            Email {sortConfig.key === 'email' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                          </th>
+                          <th>Rôles</th>
+                          <th onClick={() => handleSort('birthCity')} className="sortable">
+                            Ville {sortConfig.key === 'birthCity' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                          </th>
+                          <th onClick={() => handleSort('createdAt')} className="sortable">
+                            Inscrit le {sortConfig.key === 'createdAt' && (sortConfig.direction === 'asc' ? '▲' : '▼')}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {getFilteredUsers().map((user) => (
+                          <tr key={user.id}>
+                            <td className="id-col">#{user.id}</td>
+                            <td className="name-col">
+                              <div className="user-cell">
+                                <div className="avatar-small">
+                                  {user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                                </div>
+                                <span>{user.name || 'N/A'}</span>
+                              </div>
+                            </td>
+                            <td className="email-col">{user.email}</td>
+                            <td className="roles-col">
+                              {getRoleBadges(user.roles)}
+                            </td>
+                            <td className="city-col">{user.birthCity || 'N/A'}</td>
+                            {/* MFA column removed per request */}
+                            <td className="date-col">{formatDate(user.createdAt)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {getFilteredUsers().length === 0 && users.length > 0 && (
+                      <div className="no-results">
+                        Aucun client trouvé avec les critères de recherche.
                       </div>
-                    </li>
-                  ))}
-                </ul>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}

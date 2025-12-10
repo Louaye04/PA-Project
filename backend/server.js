@@ -27,6 +27,7 @@ const dhRoutes = require("./routes/dh.routes");
 const productRoutes = require("./routes/product.routes");
 const orderRoutes = require("./routes/order.routes");
 const webhookRoutes = require("./routes/webhook.routes");
+const userRoutes = require("./routes/user.routes");
 const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
@@ -85,6 +86,7 @@ app.use("/api/dh", dhRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/webhook", webhookRoutes);
+app.use("/api/users", userRoutes);
 
 // 404 handler
 app.use((req, res) => {

@@ -1,106 +1,54 @@
 [
   {
     "id": 1,
-    "email": "hindkahla09@gmail.com",
-    "password": "$2a$10$oOHqYQAHLbV9Gte8sF25CeAAEpUnS9MLm7YN1tggmWt6lHbctQeOa",
-    "name": "Kahla Hind",
-    "role": "buyer",
-    "mfaEnabled": true,
-    "totpSecret": "IRIG2LRQMYSSI2B4H5JEGT2LNFXUULD2",
-    "totpProvisioningUri": "otpauth://totp/BKH%20Shop%20(hindkahla09%40gmail.com)?secret=IRIG2LRQMYSSI2B4H5JEGT2LNFXUULD2",
-    "birthCity": "Alger",
-    "createdAt": "2025-11-18T22:55:58.596Z"
+    "email": "admin@ecommerce.com",
+    "password": "$2a$10$HJu1RP8eWoMbTRn0U.1lrOLgPkOIIBMkGIVAIb3oHe8A53OvSC9R2",
+    "name": "Admin User",
+    "role": "user",
+    "mfaEnabled": false
   },
   {
     "id": 2,
-    "email": "hindkahla271@gmail.com",
-    "password": "$2a$10$x0LEh2ovC7d.yevOnzOSA.zCAnw9hA8cqt.IQPCFmDRovPHE4ebtu",
-    "name": "Kahla Hind",
-    "role": "seller",
-    "mfaEnabled": true,
-    "totpSecret": "GEZSUQRROMUW2YLTGM5FUTCLOAWHILT3",
-    "totpProvisioningUri": "otpauth://totp/BKH%20Shop%20(hindkahla271%40gmail.com)?secret=GEZSUQRROMUW2YLTGM5FUTCLOAWHILT3",
-    "birthCity": "Alger",
-    "createdAt": "2025-11-19T00:26:26.754Z"
+    "email": "user@example.com",
+    "password": "$2a$10$aBR0ixMM/LGfa101nLVfzuK5fgDMltCTsHFpQ6ILOszmq6WxOgIVS",
+    "name": "John Doe",
+    "role": "buyer",
+    "mfaEnabled": false
   },
   {
     "id": 3,
-    "email": "hindkahla49@gmail.com",
-    "password": "$2a$10$mYXfNbVQ4oMucIjyc2HTd.qCNdh6U57dhuzmFrhwVbabDYmCc0IV6",
-    "name": "Kahla Hind",
-    "role": "buyer",
-    "mfaEnabled": true,
-    "totpSecret": "JETHCOSDFFTHUNLGGJBUIYSPEFJCGOSR",
-    "totpProvisioningUri": "otpauth://totp/BKH%20Shop%20(hindkahla49%40gmail.com)?secret=JETHCOSDFFTHUNLGGJBUIYSPEFJCGOSR",
-    "birthCity": "Alger",
-    "createdAt": "2025-11-19T01:09:08.610Z"
-  },
-  {
-    "id": 4,
     "email": "hindkahla413@gmail.com",
-    "password": "$2a$10$qUvDhvs0RckGcQHGLhZ8Zu/aeJvK5DKA7VO/E.hiYSNhBCEQDL4LO",
+    "password": "$2a$10$7lZPGby12hmmsqEkxeoa6OhuYbmoFqze3lzUsRG77M37j3rTxsr/a",
     "name": "admin_413",
     "role": "admin",
     "mfaEnabled": true,
-    "totpSecret": "H5AW26BDPJTDU4JJOJFDYQ3SHZJW4JTN",
-    "totpProvisioningUri": "otpauth://totp/BKH%20Shop%20(hindkahla413%40gmail.com)?secret=H5AW26BDPJTDU4JJOJFDYQ3SHZJW4JTN",
+    "totpSecret": "JVYVAI3FGU2DKTCOKJTTCIZOLY6EKNKT",
+    "totpProvisioningUri": "otpauth://totp/BKH%20Shop%20(hindkahla413%40gmail.com)?secret=JVYVAI3FGU2DKTCOKJTTCIZOLY6EKNKT",
     "birthCity": "Alger",
-    "createdAt": "2025-11-19T01:20:58.997Z"
+    "createdAt": "2025-12-10T00:35:05.798Z"
   },
   {
-    "id": 5,
+    "id": 4,
     "email": "hindkahla663@gmail.com",
-    "password": "$2a$10$Cbir5oTVZoA0OJT8YbTYxO40PhGCY1lhLxNbGAUxoO1URbfjKMw/6",
+    "password": "$2a$10$7XfG2Y1fGPd9O1G2qrqOd.arBqxd5AZeQFl2hWMNwOtM5joMpwkqy",
     "name": "admin_663",
     "role": "admin",
     "mfaEnabled": true,
-    "totpSecret": "PE3DOKLRLZGHEYS3GRTU6MK5EZ3D6JK3",
-    "totpProvisioningUri": "otpauth://totp/BKH%20Shop%20(hindkahla663%40gmail.com)?secret=PE3DOKLRLZGHEYS3GRTU6MK5EZ3D6JK3",
+    "totpSecret": "J5EXCPDBJNGHIKTSJFSDGMRTMYSW2KJG",
+    "totpProvisioningUri": "otpauth://totp/BKH%20Shop%20(hindkahla663%40gmail.com)?secret=J5EXCPDBJNGHIKTSJFSDGMRTMYSW2KJG",
     "birthCity": "Alger",
-    "createdAt": "2025-11-19T01:20:59.064Z"
+    "createdAt": "2025-12-10T00:35:05.980Z"
   },
   {
-    "id": 6,
+    "id": 5,
     "email": "hindkahla29@gmail.com",
-    "password": "$2a$10$1rAw1qXqv9NBDEQRkoQt1eW58jeDOQ9wjDdAVLU.WY.S2W7NbExxi",
+    "password": "$2a$10$lY.VvOnt.2CBVjpM67drguwaCVblPsu21PeiGHjoQC534Jj4VgMKG",
     "name": "admin_29",
     "role": "admin",
     "mfaEnabled": true,
-    "totpSecret": "KEYGOXTVPBXUEVTDIRDFQZKLOMXT6VSC",
-    "totpProvisioningUri": "otpauth://totp/BKH%20Shop%20(hindkahla29%40gmail.com)?secret=KEYGOXTVPBXUEVTDIRDFQZKLOMXT6VSC",
+    "totpSecret": "G5TSCQJUK5DV4JL2GNGSMODLNAQSK6TD",
+    "totpProvisioningUri": "otpauth://totp/BKH%20Shop%20(hindkahla29%40gmail.com)?secret=G5TSCQJUK5DV4JL2GNGSMODLNAQSK6TD",
     "birthCity": "Alger",
-    "createdAt": "2025-11-19T01:20:59.128Z"
-  },
-  {
-    "id": 7,
-    "email": "babaamerabdenour44@gmail.com",
-    "password": "$2a$10$VWqf78MOF.1XDK8zmoa0FOSv7Qy82aXjreHUMt6VYR5X3roYm/B4y",
-    "name": "Abdennour BABAAMER",
-    "role": "seller",
-    "createdAt": "2025-11-29T20:21:10.887Z"
-  },
-  {
-    "id": 8,
-    "email": "khobziabderrahmane@gmail.com",
-    "password": "$2a$10$qE1fdJDdWSRHI.LCYHLkwePO4V6nwyZ09J8Z8afe13y6fwLNdSLh2",
-    "name": "Khobzi Abderrahmane",
-    "role": "buyer",
-    "createdAt": "2025-12-01T11:23:07.513Z"
-  },
-  {
-    "id": 9,
-    "email": "ninkopvp@gmail.com",
-    "password": "$2a$10$UWb0Kx/LQ2ym8y13FQ4CCuZr5EzRkd41nToXGgVJoZSFOmdnCdCla",
-    "name": "Buyer",
-    "role": "seller",
-    "createdAt": "2025-12-03T08:53:57.636Z"
-  },
-  {
-    "id": 10,
-    "email": "khobziabderehmane@gmail.com",
-    "password": "$2a$10$HTEg/X.o3zOnlyTXUkwb9ejrW07qFTW4Evw6jWtaoquR8O4D1Zw.y",
-    "name": "Vendeur test",
-    "role": "seller",
-    "createdAt": "2025-12-09T21:17:05.564Z"
+    "createdAt": "2025-12-10T00:35:06.164Z"
   }
 ]
