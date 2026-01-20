@@ -12,8 +12,28 @@
       "dest": "/api/$1"
     },
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "src": "^/asset-manifest.json$",
+      "dest": "/frontend/build/asset-manifest.json"
+    },
+    {
+      "src": "^/favicon.svg$",
+      "dest": "/frontend/build/favicon.svg"
+    },
+    {
+      "src": "^/interface-ecommerce.png$",
+      "dest": "/frontend/build/interface-ecommerce.png"
+    },
+    {
+      "src": "^/static/(.*)$",
+      "dest": "/frontend/build/static/$1"
+    },
+    {
+      "src": "^/(.*\\.(js|css|png|svg|json|txt|map))$",
+      "dest": "/frontend/build/$1"
+    },
+    {
+      "src": "^/(.*)$",
+      "dest": "/frontend/build/index.html"
     }
   ]
 }
