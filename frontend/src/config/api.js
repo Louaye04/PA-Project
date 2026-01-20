@@ -1,8 +1,9 @@
 import axios from "axios";
 
 // API Configuration
-// Use environment variable when provided; default to 127.0.0.1:5000 to avoid IPv6 localhost (::1) issues on Windows.
-const API_BASE_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:5000";
+// Use environment variable when provided; in production use the same origin `/api` path so
+// the frontend talks to the serverless functions hosted on the same domain.
+const API_BASE_URL = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '/api' : "http://127.0.0.1:5000");
 
 // Configure axios defaults
 axios.defaults.baseURL = API_BASE_URL;
