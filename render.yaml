@@ -1,0 +1,49 @@
+# Render deployment manifest for the project
+# - One Node web service for the backend
+# - One static site for the frontend build
+
+services:
+  - type: web
+    name: bkh-backend
+    env: node
+    region: oregon
+    plan: free
+    # Build and start the backend from the `backend/` folder
+    buildCommand: cd backend && npm install
+    startCommand: node backend/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: '5000'
+      # The following secrets MUST be set in the Render dashboard or replaced here
+      - key: JWT_SECRET
+        value: REPLACE_ME
+      - key: SMTP_HOST
+        value: REPLACE_ME
+      - key: SMTP_PORT
+        value: REPLACE_ME
+      - key: SMTP_USER
+        value: REPLACE_ME
+      - key: SMTP_PASS
+        value: REPLACE_ME
+    autoDeploy: true
+
+static_sites:
+  - name: bkh-frontend
+    # Build command installs deps inside `frontend/` and produces `frontend/build`
+    buildCommand: npm --prefix frontend install && npm --prefix frontend run build
+    publishPath: frontend/build
+    branch: main
+    envVars:
+      # At build time the CRA app needs REACT_APP_API_URL set so the bundle targets the backend.
+      - key: REACT_APP_API_URL
+        value: https://<YOUR_BACKEND_URL>
+    autoDeploy: true
+
+# Notes:
+# 1) After adding this file commit & push to your Git repo, then connect that repo to Render (Render
+#    will detect the manifest and create the two services).
+# 2) Replace the REPLACE_ME values or set corresponding environment variables in the Render service
+#    settings (recommended for secrets like JWT_SECRET and SMTP credentials).
+# 3) If your Git default branch isn't `main` adjust the `branch` fields above.
