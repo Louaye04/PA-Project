@@ -128,9 +128,11 @@ app.use(errorHandler);
 // Start server
 const BIND_HOST = process.env.BIND_HOST || "0.0.0.0";
 
-app.listen(PORT, BIND_HOST, () => {
-  console.log(`✓ Server running on ${BIND_HOST}:${PORT}`);
-  console.log(`✓ Health check: http://localhost:${PORT}/api/health`);
-});
+if (require.main === module) {
+  app.listen(PORT, BIND_HOST, () => {
+    console.log(`✓ Server running on ${BIND_HOST}:${PORT}`);
+    console.log(`✓ Health check: http://localhost:${PORT}/api/health`);
+  });
+}
 
 module.exports = app;
