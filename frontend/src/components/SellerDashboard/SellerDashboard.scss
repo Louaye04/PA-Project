@@ -110,7 +110,9 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  /* Allow internal vertical scrolling so seller can reach the bottom */
+  height: 100vh;
+  overflow-y: auto;
   background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0d0d0d 100%);
   width: 100%;
 }
@@ -193,7 +195,7 @@
   padding: 32px 40px;
   background: transparent;
   width: 100%;
-  min-height: 100%;
+  min-height: auto;
 
   h2 {
     font-size: 28px;
@@ -665,6 +667,25 @@
               box-shadow: 0 8px 20px rgba(255, 107, 53, 0.3);
             }
           }
+
+          .accept-btn {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: none;
+            background: #10b981; /* green */
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            margin-right: 10px;
+            cursor: pointer;
+            transition: var(--transition-base);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);
+
+            &:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 8px 20px rgba(16, 185, 129, 0.18);
+            }
+          }
         }
       }
     }
@@ -708,6 +729,12 @@
       background: rgba(239, 68, 68, 0.15);
       color: #ef4444;
       border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    &.status-accepted {
+      background: rgba(16, 185, 129, 0.12);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.2);
     }
 
     &.status-default {
@@ -828,6 +855,77 @@
       }
     }
   }
+}
+
+/* ============ ALL PRODUCTS TABLE (Seller - site-wide view) ============ */
+.all-products-view {
+  .all-products-table {
+    overflow: auto;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #0b0b0b, #0e0e0e);
+    border: 1px solid rgba(255,255,255,0.03);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      color: var(--text-primary);
+
+      thead th {
+        text-align: left;
+        padding: 12px 18px;
+        font-weight: 800;
+        font-size: 13px;
+        color: rgba(255,255,255,0.9);
+        border-bottom: 1px solid rgba(255,255,255,0.03);
+        text-transform: none;
+        letter-spacing: 0.6px;
+        background: transparent;
+      }
+
+      tbody tr {
+        border-bottom: 1px solid rgba(255,255,255,0.02);
+        height: 64px;
+        transition: background 180ms ease, transform 120ms ease;
+      }
+
+      tbody tr:hover {
+        background: linear-gradient(90deg, rgba(255,107,53,0.02), rgba(255,138,91,0.02));
+      }
+
+      td {
+        padding: 12px 18px;
+        vertical-align: middle;
+        color: var(--text-secondary);
+        font-size: 15px;
+      }
+
+      .img-cell img { width: 72px; height: 48px; object-fit: cover; border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,0.6); }
+      .name-cell { font-weight: 800; color: var(--text-primary); font-size: 16px; }
+      .price-cell { color: var(--secondary-color); font-weight: 900; font-size: 15px; }
+      .actions-cell { text-align: right; }
+    }
+  }
+
+  .all-products-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+    padding: 10px 4px;
+
+    .count { color: var(--text-secondary); font-size: 13px; }
+
+    .pagination { display: flex; gap: 8px; align-items: center; }
+
+    .page-btn { width: 36px; height: 36px; padding: 0; background: #141414; color: var(--text-primary); border: 1px solid rgba(255,255,255,0.03); border-radius: 8px; cursor: pointer; display:flex; align-items:center; justify-content:center; }
+    .page-btn:hover:not(:disabled) { background: linear-gradient(90deg,#ff6b35,#ff8a5b); color: #fff; transform: translateY(-2px); }
+    .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .page-numbers { color: var(--text-secondary); font-weight: 700; }
+  }
+
+  .btn.details-btn { background: linear-gradient(90deg,#ff6b35,#ff8a5b); color: #fff; padding: 8px 14px; border-radius: 10px; border: none; font-weight: 800; box-shadow: 0 8px 20px rgba(255,107,53,0.18); }
+  .sd-modal-panel { max-width: 720px; padding: 20px; background: var(--surface); border-radius: 12px; }
 }
 
 /* ============ MODAL ============ */
@@ -993,4 +1091,17 @@
   .stats-grid {
     grid-template-columns: 1fr !important;
   }
+}
+
+/* Ensure select and option contrast on dark backgrounds */
+.seller-dashboard-root select,
+.seller-dashboard-root .status-select {
+  background: var(--background);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.seller-dashboard-root select option {
+  background: var(--surface);
+  color: var(--text-primary);
 }

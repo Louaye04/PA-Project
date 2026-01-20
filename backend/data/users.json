@@ -72,5 +72,50 @@
     ],
     "role": "seller",
     "createdAt": "2025-12-10T02:04:29.513Z"
+  },
+  {
+    "id": 8,
+    "email": "hindkahla2@gmail.com",
+    "password": "$2a$10$9P4FskyyKGSyOM0Og0SZh.kgjHw7UpkyjjXq0j3wJS2wDHGkgBGuy",
+    "name": "Kahla Hind",
+    "roles": [
+      "seller"
+    ],
+    "role": "seller",
+    "createdAt": "2025-12-27T00:27:46.394Z"
+  },
+  {
+    "id": 9,
+    "email": "hindkahla271@gmail.com",
+    "password": "$2a$10$YbllqoSoqW71twOfhVe.nOaoAZAIEu0QoM0tGzkwCoewse5acPb42",
+    "name": "Kahla Hind",
+    "roles": [
+      "buyer",
+      "seller"
+    ],
+    "role": "buyer",
+    "createdAt": "2025-12-27T00:31:06.410Z"
+  },
+  {
+    "id": 10,
+    "email": "sellerb@example.local",
+    "password": "$2a$10$irIpdBCkyuyTDJI5OfRD6O5XskHUpo2Wakp8T42UczXC02CqOqZvy",
+    "name": "SellerB",
+    "roles": [
+      "seller"
+    ],
+    "role": "seller",
+    "createdAt": "2025-12-31T01:36:54.789Z"
+  },
+  {
+    "id": 11,
+    "email": "hindkahla20@gmail.com",
+    "password": "$2a$10$YN0ZMWa1OkJA7Z16oLCBE.eHVJKDM0G1eKRJOXTJvT.QA317BC1Va",
+    "name": "Kahla Hind",
+    "roles": [
+      "seller"
+    ],
+    "role": "seller",
+    "createdAt": "2025-12-31T22:56:02.667Z"
   }
 ]

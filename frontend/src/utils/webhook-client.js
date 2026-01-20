@@ -3,6 +3,8 @@
  * Permet de recevoir des notifications en temps réel du serveur
  */
 
+import API_BASE_URL from "../config/api";
+
 let eventSource = null;
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
@@ -39,7 +41,7 @@ export const connectWebhook = () => {
   }
   
   // Créer une nouvelle connexion SSE
-  const url = `http://localhost:5000/api/webhook/events?token=${encodeURIComponent(token)}`;
+  const url = `${API_BASE_URL.replace(/\/$/, '')}/api/webhook/events?token=${encodeURIComponent(token)}`;
   eventSource = new EventSource(url);
   
   // Événement de connexion

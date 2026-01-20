@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const dhController = require('../controllers/dh.controller');
 const { authenticate } = require('../middleware/auth.middleware');
+const { checkPermission } = require('../middleware/permission.middleware');
 const { body, param } = require('express-validator');
 
 /**
@@ -14,6 +15,7 @@ const { body, param } = require('express-validator');
 router.post(
   '/create-session',
   authenticate,
+  checkPermission('dh','create'),
   [
     body('sellerId').notEmpty().withMessage('ID du vendeur requis'),
     body('buyerId').notEmpty().withMessage('ID de l\'acheteur requis'),
@@ -66,6 +68,7 @@ router.get(
 router.post(
   '/send-message',
   authenticate,
+  checkPermission('dh','create'),
   [
     body('sessionId').notEmpty().withMessage('ID de session requis'),
     body('encryptedData').isObject().withMessage('Données chiffrées requises'),
@@ -120,6 +123,7 @@ router.post(
 router.get(
   '/stats',
   authenticate,
+  checkPermission('dh','admin'),
   dhController.getStats
 );
 
@@ -129,6 +133,7 @@ router.get(
 router.post(
   '/cleanup',
   authenticate,
+  checkPermission('dh','admin'),
   dhController.cleanup
 );
 

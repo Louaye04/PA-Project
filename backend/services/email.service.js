@@ -40,23 +40,52 @@ const OTP_CONFIG = {
  * Create email transporter
  * IMPORTANT: Configure with your email provider
  */
-const createTransporter = () => {
-  // For Gmail (configure in .env):
-  // EMAIL_USER=your-email@gmail.com
-  // EMAIL_PASS=your-app-specific-password (not your regular password!)
+const createTransporter = async () => {
+  // Allow forcing Ethereal for testing regardless of env EMAIL_* vars
+  const forceEthereal =
+    process.env.FORCE_ETHEREAL &&
+    ["1", "true", "yes"].includes(process.env.FORCE_ETHEREAL.toString().toLowerCase());
 
-  return nodemailer.createTransport({
-    service: "gmail", // or 'outlook', 'yahoo', etc.
+  if (forceEthereal) {
+    const testAccount = await nodemailer.createTestAccount();
+    const transporter = nodemailer.createTransport({
+      host: testAccount.smtp.host,
+      port: testAccount.smtp.port,
+      secure: testAccount.smtp.secure,
+      auth: { user: testAccount.user, pass: testAccount.pass },
+    });
+    console.log(`✓ FORCE_ETHEREAL enabled — using Ethereal: ${testAccount.user}`);
+    return { transporter, isTest: true, testAccount };
+  }
+  // If EMAIL_USER and EMAIL_PASS are provided, use real SMTP (Gmail example)
+  if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+      secure: true,
+      tls: { rejectUnauthorized: true },
+    });
+
+    return { transporter, isTest: false };
+  }
+
+  // Fallback: create Ethereal test account for development/testing
+  const testAccount = await nodemailer.createTestAccount();
+  const transporter = nodemailer.createTransport({
+    host: "smtp.ethereal.email",
+    port: 587,
+    secure: false,
     auth: {
-      user: process.env.EMAIL_USER || "babaamerabdenour44@gmail.com",
-      pass: process.env.EMAIL_PASS || "fkgxhrhwlbredqar",
-    },
-    // Security options
-    secure: true, // use TLS
-    tls: {
-      rejectUnauthorized: true,
+      user: testAccount.user,
+      pass: testAccount.pass,
     },
   });
+
+  console.log(`✓ Using Ethereal test account: ${testAccount.user}`);
+  return { transporter, isTest: true, testAccount };
 };
 
 /**
@@ -208,8 +237,9 @@ exports.sendOTPEmail = async (email, userName, ipAddress = null) => {
     
     console.log(`✓ OTP stored for ${email}: ${otp} (Session: ${sessionId})`);
 
-    // Create email transporter
-    const transporter = createTransporter();
+    // Create email transporter (may return Ethereal test transporter)
+    const t = await createTransporter();
+    const transporter = t.transporter;
 
     // Email HTML template (professional and secure)
     const emailHtml = `
@@ -220,8 +250,6 @@ exports.sendOTPEmail = async (email, userName, ipAddress = null) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Verification Code - BKH Shop</title>
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }
-    .container { max-width: 600px; margin: 0 auto; background: white; }
     .header { background: linear-gradient(135deg, #6d28d9, #ec4899); padding: 30px; text-align: center; }
     .header h1 { color: white; margin: 0; font-size: 24px; }
     .content { padding: 40px 30px; }
@@ -311,30 +339,56 @@ exports.sendOTPEmail = async (email, userName, ipAddress = null) => {
 </html>
     `;
 
-    // Send email
-    const info = await transporter.sendMail({
-      from: `"BKH Shop Security" <${
-        process.env.EMAIL_USER || "noreply@bkhshop.com"
-      }>`,
-      to: email,
-      subject: `🔐 Your Verification Code: ${otp}`,
-      html: emailHtml,
-      text: `Your BKH Shop verification code is: ${otp}\n\nThis code expires in ${
-        OTP_CONFIG.EXPIRY_MINUTES
-      } minutes.\n\nSession ID: ${sessionId}\nSent at: ${new Date(
-        timestamp
-      ).toLocaleString()}\n\nIf you didn't request this, please ignore this email.`,
-      // Security headers
-      headers: {
-        "X-Priority": "1",
-        "X-MSMail-Priority": "High",
-        Importance: "high",
-      },
-    });
+    // Send email (try real transporter first; on auth failure, retry with Ethereal)
+    let info;
+    let usedEthereal = false;
+    try {
+      info = await transporter.sendMail({
+        from: `"BKH Shop Security" <${process.env.EMAIL_USER || "noreply@bkhshop.com"}>`,
+        to: email,
+        subject: `🔐 Your Verification Code: ${otp}`,
+        html: emailHtml,
+        text: `Your BKH Shop verification code is: ${otp}\n\nThis code expires in ${OTP_CONFIG.EXPIRY_MINUTES} minutes.\n\nSession ID: ${sessionId}\nSent at: ${new Date(timestamp).toLocaleString()}\n\nIf you didn't request this, please ignore this email.`,
+        headers: { "X-Priority": "1", "X-MSMail-Priority": "High", Importance: "high" },
+      });
+    } catch (sendErr) {
+      const isAuthError =
+        (sendErr && sendErr.responseCode === 535) ||
+        (sendErr && sendErr.message && sendErr.message.includes('Invalid login')) ||
+        (sendErr && sendErr.message && sendErr.message.includes('535'));
 
-    // Log removed
+      if (isAuthError) {
+        try {
+          const testAccount = await nodemailer.createTestAccount();
+          const testTransporter = nodemailer.createTransport({
+            host: testAccount.smtp.host,
+            port: testAccount.smtp.port,
+            secure: testAccount.smtp.secure,
+            auth: { user: testAccount.user, pass: testAccount.pass },
+          });
 
-    return {
+          info = await testTransporter.sendMail({
+            from: `"BKH Shop Security" <${testAccount.user}>`,
+            to: email,
+            subject: `🔐 Your Verification Code: ${otp}`,
+            html: emailHtml,
+            text: `Your BKH Shop verification code is: ${otp}`,
+            headers: { "X-Priority": "1" },
+          });
+
+          usedEthereal = true;
+          const previewUrl = nodemailer.getTestMessageUrl(info);
+          console.log(`✓ Sent with Ethereal preview URL: ${previewUrl}`);
+        } catch (ethErr) {
+          console.error('Ethereal retry failed:', ethErr && ethErr.message);
+          throw sendErr;
+        }
+      } else {
+        throw sendErr;
+      }
+    }
+
+    const result = {
       success: true,
       message: "Verification code sent successfully",
       sessionId,
@@ -342,8 +396,43 @@ exports.sendOTPEmail = async (email, userName, ipAddress = null) => {
       expiresIn: OTP_CONFIG.EXPIRY_MINUTES * 60, // seconds
       canResendAt: timestamp + OTP_CONFIG.RESEND_COOLDOWN_SECONDS * 1000,
     };
+
+    // Provide preview URL when Ethereal was used or when createTransporter returned test account
+    try {
+      if (usedEthereal) {
+        const previewUrl = nodemailer.getTestMessageUrl(info);
+        if (previewUrl) result.previewUrl = previewUrl;
+      } else if (t && t.isTest) {
+        const previewUrl = nodemailer.getTestMessageUrl(info);
+        if (previewUrl) {
+          result.previewUrl = previewUrl;
+          result.testAccount = { user: t.testAccount.user };
+        }
+      }
+    } catch (e) {
+      // ignore preview errors
+    }
+
+    return result;
   } catch (error) {
-    // Log removed
+    // If SMTP authentication failed, provide actionable guidance
+    try {
+      const isAuthError =
+        (error && error.responseCode === 535) ||
+        (error && error.response && typeof error.response === 'string' && error.response.includes('535')) ||
+        (error && error.message && error.message.includes('535'));
+
+      if (isAuthError) {
+        const guidance =
+          "SMTP authentication failed (535 - Bad credentials). Pour Gmail, créez un 'App Password' (avec 2FA) et mettez-le dans EMAIL_PASS, ou configurez OAuth2. Voir: https://support.google.com/mail/?p=BadCredentials";
+        const e = new Error(`${guidance} Original error: ${error.message || error}`);
+        e.original = error;
+        throw e;
+      }
+    } catch (inner) {
+      // ignore parsing errors, rethrow original
+    }
+
     throw error;
   }
 };

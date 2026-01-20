@@ -2,14 +2,12 @@ const express = require('express');
 const router = express.Router();
 const productController = require('../controllers/product.controller');
 const { authenticate } = require('../middleware/auth.middleware');
+const { checkPermission } = require('../middleware/permission.middleware');
 const { body, param } = require('express-validator');
 
 // Obtenir tous les produits (accessible à tous les utilisateurs authentifiés)
-router.get(
-  '/',
-  authenticate,
-  productController.getAllProducts
-);
+// Liste publique des produits (accessible sans authentification)
+router.get('/', productController.getAllProducts);
 
 // Obtenir les produits du vendeur connecté
 router.get(
@@ -32,10 +30,20 @@ router.get(
 router.post(
   '/',
   authenticate,
+  checkPermission('products','create'),
   [
     body('name').notEmpty().withMessage('Nom du produit requis'),
-    body('price').isNumeric().withMessage('Prix doit être un nombre'),
-    body('stock').optional().isNumeric().withMessage('Stock doit être un nombre'),
+    body('price').custom((value) => {
+      if (typeof value === 'number' && !isNaN(value)) return true;
+      if (typeof value === 'string' && value.trim() !== '' && !isNaN(Number(value))) return true;
+      throw new Error('Prix doit être un nombre');
+    }),
+    body('stock').optional().custom((value) => {
+      if (value === undefined || value === null || value === '') return true;
+      if (typeof value === 'number' && Number.isInteger(value) && value >= 0) return true;
+      if (typeof value === 'string' && value.trim() !== '' && Number.isInteger(Number(value))) return true;
+      throw new Error('Stock doit être un nombre entier >= 0');
+    }),
     body('desc').optional().isString().withMessage('Description doit être une chaîne')
   ],
   productController.createProduct
@@ -45,6 +53,7 @@ router.post(
 router.put(
   '/:productId',
   authenticate,
+  checkPermission('products','update'),
   [
     param('productId').notEmpty().withMessage('ID du produit requis'),
     body('name').optional().notEmpty().withMessage('Nom ne peut pas être vide'),
@@ -59,6 +68,7 @@ router.put(
 router.delete(
   '/:productId',
   authenticate,
+  checkPermission('products','delete'),
   [
     param('productId').notEmpty().withMessage('ID du produit requis')
   ],

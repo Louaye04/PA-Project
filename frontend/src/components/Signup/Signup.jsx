@@ -22,12 +22,7 @@ const Signup = ({ onSwitchToLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // NEW: Email OTP state
-  const [requiresOTP, setRequiresOTP] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [sessionId, setSessionId] = useState('');
-  const [canResendAt, setCanResendAt] = useState(null);
-  const [resendCooldown, setResendCooldown] = useState(0);
+  // (OTP removed) No OTP state required
 
   // Set page title while on the signup page and restore previous title on unmount
   useEffect(() => {
@@ -196,25 +191,25 @@ const Signup = ({ onSwitchToLogin }) => {
 
       const response = await axios.post(`${API_BASE_URL}/api/auth/signup`, signupData);
 
-      // NEW: Check if OTP verification is required
-      if (response.data.requiresOTP) {
-        setRequiresOTP(true);
-        setSessionId(response.data.sessionId);
-        setCanResendAt(response.data.canResendAt);
-        setMessage({
-          type: 'info',
-          text: response.data.message || 'Verification code sent to your email'
-        });
-      } else {
-        // Fallback for backward compatibility
-        setMessage({
-          type: 'success',
-          text: response.data.message || 'Account created successfully!'
-        });
+      // If backend returned a token, store it and redirect (auto-login)
+      if (response.data.token) {
+        try {
+          localStorage.setItem('authToken', response.data.token);
+          if (response.data.user?.email) localStorage.setItem('userEmail', response.data.user.email);
+          if (response.data.user?.name) localStorage.setItem('userName', response.data.user.name);
+        } catch (e) {}
 
-        // Reset form
+        setMessage({ type: 'success', text: response.data.message || 'Account created and logged in.' });
+
+        // Optionally switch to dashboard / login
+        setTimeout(() => {
+          if (onSwitchToLogin) onSwitchToLogin();
+          else window.location.href = '/dashboard';
+        }, 800);
+      } else {
+        setMessage({ type: 'success', text: response.data.message || 'Account created successfully!' });
         setFormData({ name: '', email: '', password: '', confirmPassword: '' });
-        setSelectedRoles(['buyer']); // Reset to default
+        setSelectedRoles(['buyer']);
       }
 
       console.log('Signup successful:', response.data);
@@ -263,123 +258,7 @@ const Signup = ({ onSwitchToLogin }) => {
     }
   };
 
-  // NEW: Handle OTP verification
-  const handleVerifyOTP = async (e) => {
-    e.preventDefault();
-
-    if (!otpCode || otpCode.length !== 6) {
-      setMessage({
-        type: 'error',
-        text: 'Please enter a valid 6-digit code'
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    setMessage({ type: '', text: '' });
-
-    try {
-      const response = await axios.post(`${API_BASE_URL}/api/auth/verify-otp`, {
-        email: formData.email,
-        otp: otpCode,
-        sessionId: sessionId
-      });
-
-      setMessage({
-        type: 'success',
-        text: 'Email verified successfully! You can now log in.'
-      });
-
-      // Reset all form data
-      setFormData({ name: '', email: '', password: '', confirmPassword: '' });
-      setRole('');
-      setOtpCode('');
-      setRequiresOTP(false);
-      setSessionId('');
-
-      // Auto-switch to login after 2 seconds
-      setTimeout(() => {
-        if (onSwitchToLogin) onSwitchToLogin();
-      }, 2000);
-
-    } catch (error) {
-      let errorMessage = 'Invalid verification code. Please try again.';
-
-      if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-
-      setMessage({
-        type: 'error',
-        text: errorMessage
-      });
-
-      console.error('OTP verification error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // NEW: Handle OTP resend
-  const handleResendOTP = async () => {
-    if (resendCooldown > 0) {
-      return;
-    }
-
-    setIsLoading(true);
-    setMessage({ type: '', text: '' });
-
-    try {
-      const response = await axios.post(`${API_BASE_URL}/api/auth/resend-otp`, {
-        email: formData.email
-      });
-
-      setSessionId(response.data.sessionId);
-      setCanResendAt(response.data.canResendAt);
-      setOtpCode('');
-
-      setMessage({
-        type: 'success',
-        text: 'New verification code sent!'
-      });
-
-    } catch (error) {
-      let errorMessage = 'Failed to resend code. Please try again.';
-
-      if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-
-      setMessage({
-        type: 'error',
-        text: errorMessage
-      });
-
-      console.error('OTP resend error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // NEW: Resend cooldown timer
-  useEffect(() => {
-    if (!canResendAt) return;
-
-    const interval = setInterval(() => {
-      const remaining = Math.max(0, Math.ceil((canResendAt - Date.now()) / 1000));
-      setResendCooldown(remaining);
-
-      if (remaining === 0) {
-        clearInterval(interval);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [canResendAt]);
+  // OTP removed: no handlers required
 
   return (
     <div className="signup-container">
@@ -647,7 +526,6 @@ const Signup = ({ onSwitchToLogin }) => {
 
           {/* Terms checkbox removed per request */}
 
-          {!requiresOTP && (
             <button
               type="submit"
               className="submit-button"
@@ -682,7 +560,6 @@ const Signup = ({ onSwitchToLogin }) => {
                 'Create Account'
               )}
             </button>
-          )}
         </form>
 
         {/* Role Selection Modal */}
@@ -776,82 +653,7 @@ const Signup = ({ onSwitchToLogin }) => {
           </div>
         )}
 
-        {/* NEW: Email OTP Verification Section */}
-        {requiresOTP && (
-          <div className="modal-overlay">
-            <div className="modal-content otp-modal" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <div className="modal-icon">
-                  <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <h2 className="modal-title">Verify Your Email</h2>
-                <p className="modal-subtitle">We've sent a 6-digit code to <strong>{formData.email}</strong></p>
-              </div>
-
-              <form onSubmit={handleVerifyOTP} className="modal-body">
-                <div className="form-group">
-                  <label htmlFor="otpCode" className="form-label">
-                    Verification Code
-                  </label>
-                  <input
-                    type="text"
-                    id="otpCode"
-                    value={otpCode}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                      setOtpCode(value);
-                    }}
-                    className="form-input otp-input"
-                    placeholder="000000"
-                    maxLength="6"
-                    autoComplete="one-time-code"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                  />
-                </div>
-
-                <div className="modal-footer">
-                  <button
-                    type="submit"
-                    className="modal-btn-primary"
-                    disabled={isLoading || otpCode.length !== 6}
-                    aria-busy={isLoading}
-                  >
-                    {isLoading ? 'Verifying...' : 'Verify Email'}
-                  </button>
-
-                  <div className="otp-actions">
-                    <button
-                      type="button"
-                      onClick={handleResendOTP}
-                      className="modal-btn-secondary"
-                      disabled={isLoading || resendCooldown > 0}
-                    >
-                      {resendCooldown > 0
-                        ? `Resend in ${resendCooldown}s`
-                        : 'Resend Code'}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRequiresOTP(false);
-                        setOtpCode('');
-                        setMessage({ type: '', text: '' });
-                      }}
-                      className="modal-btn-text"
-                      disabled={isLoading}
-                    >
-                      ← Back to Signup
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        {/* OTP removed: email verification modal disabled */}
 
         <div className="signup-footer">
           <p className="login-text">

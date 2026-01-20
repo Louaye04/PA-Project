@@ -3,7 +3,7 @@ import './BuyerDashboard.scss';
 import Logo from '../Logo/Logo';
 import SecureChat from '../SecureChat/SecureChat';
 import { getAllProducts } from '../../utils/product-api';
-import { createOrder, getMyOrders } from '../../utils/order-api';
+import { createOrder, getMyOrders, cancelOrder } from '../../utils/order-api';
 import { connectWebhook, disconnectWebhook, onWebhookEvent } from '../../utils/webhook-client';
 import { useToast } from '../../contexts/ToastContext';
 
@@ -159,7 +159,16 @@ const BuyerDashboard = ({ userName }) => {
   const addToCart = (p) => {
     setCart(prev => {
       const existing = prev.find(x => x.id === p.id);
+      const stock = Number(p.stock) || 0;
+      if (stock <= 0) {
+        toast.error(`Rupture de stock: ${p.name}`);
+        return prev;
+      }
       if (existing) {
+        if (existing.qty >= stock) {
+          toast.error(`Limite atteinte (${stock}) pour: ${p.name}`);
+          return prev;
+        }
         toast.info(`Quantité augmentée: ${p.name}`);
         return prev.map(x => x.id === p.id ? { ...x, qty: x.qty + 1 } : x);
       }
@@ -173,7 +182,18 @@ const BuyerDashboard = ({ userName }) => {
     if (item) toast.warning(`Retiré du panier: ${item.name}`);
     setCart(prev => prev.filter(x => x.id !== id));
   };
-  const updateQty = (id, qty) => setCart(prev => prev.map(x => x.id === id ? { ...x, qty } : x));
+  const updateQty = (id, qty) => {
+    setCart(prev => prev.map(x => {
+      if (x.id !== id) return x;
+      const prod = products.find(p => p.id === id) || x;
+      const stock = Number(prod.stock) || 0;
+      const clamped = Math.max(1, Math.min(stock || qty, Number(qty)));
+      if (qty > stock) {
+        if (typeof toast?.error === 'function') toast.error(`Seulement ${stock} en stock`);
+      }
+      return { ...x, qty: clamped };
+    }));
+  };
 
   const filtered = products.filter(p => p.name.toLowerCase().includes(query.toLowerCase()) || p.desc.toLowerCase().includes(query.toLowerCase()));
 
@@ -184,7 +204,8 @@ const BuyerDashboard = ({ userName }) => {
         o.productName.toLowerCase().includes(orderSearch.toLowerCase()) ||
         o.sellerName.toLowerCase().includes(orderSearch.toLowerCase()) ||
         o.id.toString().includes(orderSearch);
-      const matchesStatus = orderStatusFilter === 'all' || o.status === orderStatusFilter;
+      const norm = normalizeStatus(o.status);
+      const matchesStatus = orderStatusFilter === 'all' || norm === orderStatusFilter;
       return matchesSearch && matchesStatus;
     })
     .sort((a, b) => {
@@ -220,16 +241,90 @@ const BuyerDashboard = ({ userName }) => {
     }));
   };
 
+  function normalizeStatus(s) {
+    if (!s) return 'unknown';
+    const v = String(s).toLowerCase().trim();
+    const map = {
+      'en attente': 'pending',
+      'en attente de validation': 'pending',
+      'pending': 'pending',
+      'acceptée – en attente de paiement': 'awaiting_payment',
+      'acceptée - en attente de paiement': 'awaiting_payment',
+      'acceptée': 'awaiting_payment',
+      'confirmée': 'awaiting_payment',
+      'awaiting_payment': 'awaiting_payment',
+      'payée': 'paid',
+      'paye': 'paid',
+      'paid': 'paid',
+      'en cours de préparation': 'in_progress',
+      'en cours de preparation': 'in_progress',
+      'in_progress': 'in_progress',
+      'expédiée': 'shipped',
+      'expediee': 'shipped',
+      'shipped': 'shipped',
+      'livrée': 'delivered',
+      'livree': 'delivered',
+      'delivered': 'delivered',
+      'annulée': 'cancelled',
+      'annulee': 'cancelled',
+      'cancelled': 'cancelled',
+    };
+    return map[v] || v;
+  }
+
   const getStatusBadge = (status) => {
+    // Map backend status codes to the requested French workflow labels
     const statusMap = {
-      pending: { label: 'En attente', class: 'status-pending' },
-      confirmed: { label: 'Confirmée', class: 'status-confirmed' },
+      pending: { label: 'En attente de validation', class: 'status-pending' },
+      awaiting_payment: { label: 'Acceptée – En attente de paiement', class: 'status-awaiting-payment' },
+      paid: { label: 'Payée', class: 'status-paid' },
+      in_progress: { label: 'En cours de préparation', class: 'status-in-progress' },
       shipped: { label: 'Expédiée', class: 'status-shipped' },
       delivered: { label: 'Livrée', class: 'status-delivered' },
       cancelled: { label: 'Annulée', class: 'status-cancelled' }
     };
-    const mapped = statusMap[status] || { label: status, class: 'status-default' };
+    const key = normalizeStatus(status);
+    const mapped = statusMap[key] || { label: String(status), class: 'status-default' };
     return <span className={`status-badge ${mapped.class}`}>{mapped.label}</span>;
+  };
+
+  // Normalize legacy/french status labels to internal keys (declaration above)
+
+  // Render a horizontal flow showing the full order lifecycle and highlight the current status
+  const renderStatusFlow = (currentStatus) => {
+    const steps = [
+      { key: 'pending', label: 'En attente de validation' },
+      { key: 'awaiting_payment', label: 'Acceptée – En attente de paiement' },
+      { key: 'paid', label: 'Payée' },
+      { key: 'in_progress', label: 'En cours de préparation' },
+      { key: 'shipped', label: 'Expédiée' },
+      { key: 'delivered', label: 'Livrée' }
+    ];
+
+    return (
+      <div className="order-status-flow" aria-hidden>
+        {steps.map((s, idx) => {
+          const active = s.key === currentStatus;
+          return (
+            <React.Fragment key={s.key}>
+              <div className={`status-step ${active ? 'active' : ''}`}>{s.label}</div>
+              {idx < steps.length - 1 && <div className="status-arrow">↓</div>}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const handleCancel = async (orderId) => {
+    if (!window.confirm('Voulez-vous vraiment annuler cette commande ?')) return;
+    try {
+      await cancelOrder(orderId);
+      toast.success('Commande annulée');
+      await loadData();
+    } catch (err) {
+      toast.error('Impossible d\'annuler la commande: ' + (err.response?.data?.error || err.message));
+    }
   };
 
   if (loading) {
@@ -315,7 +410,10 @@ const BuyerDashboard = ({ userName }) => {
                           <p className="desc">{p.desc}</p>
                         </div>
                         <div className="card-footer">
-                          <div className="price">{p.price} DA</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div className="price">{p.price} DA</div>
+                            <div className="stock-label">{(Number(p.stock) || 0) > 0 ? `En stock: ${p.stock}` : 'Rupture de stock'}</div>
+                          </div>
                           <div className="actions">
                             <button className="btn secure-buy" onClick={async () => {
                               const qty = prompt('Quantité à commander:', '1');
@@ -330,7 +428,7 @@ const BuyerDashboard = ({ userName }) => {
                                 toast.error('Erreur lors de la commande: ' + (err.response?.data?.error || err.message));
                               }
                             }}>🔐 Acheter avec Canal Sécurisé</button>
-                            <button className="btn" onClick={() => addToCart(p)}>Ajouter au panier</button>
+                            <button className="btn" onClick={() => addToCart(p)} disabled={(Number(p.stock) || 0) <= 0} title={(Number(p.stock) || 0) <= 0 ? 'Rupture de stock' : 'Ajouter au panier'}>Ajouter au panier</button>
                             <button className="btn ghost" onClick={() => setProductModal(p)}>Voir</button>
                           </div>
                         </div>
@@ -374,25 +472,29 @@ const BuyerDashboard = ({ userName }) => {
               </div>
 
               <div className="filter-group">
-                <label>Statut:</label>
-                <select value={orderStatusFilter} onChange={(e) => { setOrderStatusFilter(e.target.value); setCurrentOrderPage(1); }}>
-                  <option value="all">Tous</option>
-                  <option value="pending">En attente</option>
-                  <option value="confirmed">Confirmée</option>
-                  <option value="shipped">Expédiée</option>
-                  <option value="delivered">Livrée</option>
-                  <option value="cancelled">Annulée</option>
-                </select>
+                <label className="select-label">Statut:
+                  <select value={orderStatusFilter} onChange={(e) => { setOrderStatusFilter(e.target.value); setCurrentOrderPage(1); }}>
+                    <option value="all">Tous</option>
+                    <option value="pending">En attente</option>
+                    <option value="awaiting_payment">Acceptée – En attente de paiement</option>
+                    <option value="paid">Payée</option>
+                    <option value="in_progress">En cours de préparation</option>
+                    <option value="shipped">Expédiée</option>
+                    <option value="delivered">Livrée</option>
+                    <option value="cancelled">Annulée</option>
+                  </select>
+                </label>
               </div>
 
               <div className="filter-group">
-                <label>Par page:</label>
-                <select value={ordersPerPage} onChange={(e) => { setOrdersPerPage(Number(e.target.value)); setCurrentOrderPage(1); }}>
-                  <option value="5">5</option>
-                  <option value="10">10</option>
-                  <option value="25">25</option>
-                  <option value="50">50</option>
-                </select>
+                <label className="select-label no-arrow">Par page:
+                  <select value={ordersPerPage} onChange={(e) => { setOrdersPerPage(Number(e.target.value)); setCurrentOrderPage(1); }}>
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                  </select>
+                </label>
               </div>
             </div>
 
@@ -454,7 +556,16 @@ const BuyerDashboard = ({ userName }) => {
                           <td className="seller-name">{o.sellerName}</td>
                           <td className="text-center">×{o.quantity}</td>
                           <td className="text-right price-cell">{o.totalPrice.toLocaleString()} DA</td>
-                          <td>{getStatusBadge(o.status)}</td>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              {getStatusBadge(o.status)}
+                              {normalizeStatus(o.status) === 'pending' && (
+                                <button className="btn ghost" onClick={() => handleCancel(o.id)}>
+                                  Annuler
+                                </button>
+                              )}
+                            </div>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -580,8 +691,8 @@ const BuyerDashboard = ({ userName }) => {
           <section className="settings-view">
             <h2>Paramètres</h2>
             <form className="settings-form" onSubmit={(e) => { e.preventDefault(); setSettingsSaved(true); try { localStorage.setItem('buyerSettings', JSON.stringify(settings)); } catch (e) { }; setTimeout(() => setSettingsSaved(false), 3000); }}>
-              <div className="form-row"><label>Devise par défaut<select value={settings.currency} onChange={(e) => setSettings({ ...settings, currency: e.target.value })}><option>DA</option><option>EUR</option><option>USD</option></select></label></div>
-              <div className="form-row"><label>Fuseau horaire<select value={settings.timezone} onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}><option>Africa/Algiers</option><option>UTC</option><option>Europe/Paris</option></select></label></div>
+              <div className="form-row"><label className="select-label">Devise par défaut<select value={settings.currency} onChange={(e) => setSettings({ ...settings, currency: e.target.value })}><option>DA</option><option>EUR</option><option>USD</option></select></label></div>
+              <div className="form-row"><label className="select-label">Fuseau horaire<select value={settings.timezone} onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}><option>Africa/Algiers</option><option>UTC</option><option>Europe/Paris</option></select></label></div>
               <div className="form-row"><label>Email de contact<input value={settings.contactEmail} onChange={(e) => setSettings({ ...settings, contactEmail: e.target.value })} /></label></div>
               <div className="form-actions"><button className="btn" type="submit">Enregistrer</button></div>
               {settingsSaved && <div className="save-banner success">Paramètres enregistrés avec succès.</div>}
@@ -600,11 +711,12 @@ const BuyerDashboard = ({ userName }) => {
                     <div key={i.id} className="cart-row">
                       <div className="cart-name">{i.name}</div>
                       <div className="cart-qty">
-                        <button className="qty-btn" onClick={() => updateQty(i.id, Math.max(1, i.qty - 1))}>-</button>
+                        <button className="qty-btn" onClick={() => updateQty(i.id, Math.max(1, i.qty - 1))} disabled={i.qty <= 1}>-</button>
                         <span className="qty-value">{i.qty}</span>
-                        <button className="qty-btn" onClick={() => updateQty(i.id, i.qty + 1)}>+</button>
+                        <button className="qty-btn" onClick={() => updateQty(i.id, i.qty + 1)} disabled={i.qty >= (Number(i.stock) || 0)} title={i.qty >= (Number(i.stock) || 0) ? 'Plus de stock disponible' : 'Augmenter la quantité'}>+</button>
                       </div>
                       <div className="cart-price">{i.price * i.qty} DA</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginLeft: 8 }}>{(Number(i.stock) || 0) - i.qty} restants</div>
                       <button className="remove" onClick={() => removeFromCart(i.id)}>Supprimer</button>
                     </div>
                   ))}

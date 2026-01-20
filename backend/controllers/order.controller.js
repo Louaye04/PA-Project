@@ -36,19 +36,15 @@ exports.getOrder = async (req, res, next) => {
     const { orderId } = req.params;
     const order = orderService.getOrderById(orderId);
     
-    if (!order) {
-      return res.status(404).json({
-        error: 'Commande introuvable'
-      });
-    }
-    
-    // Vérifier que l'utilisateur a accès à cette commande
+    // Pour éviter l'énumération, renvoyer 404 lorsque la ressource n'existe
+    // ou lorsque l'utilisateur n'y a pas accès (non-admin). Ainsi l'attaquant
+    // ne peut pas distinguer "n'existe pas" vs "existe mais non autorisé".
     const userId = req.user.id;
     const role = req.user.role;
-    
-    if (role !== 'admin' && order.buyerId !== userId && order.sellerId !== userId) {
-      return res.status(403).json({
-        error: 'Non autorisé à voir cette commande'
+
+    if (!order || (role !== 'admin' && order.buyerId !== userId && order.sellerId !== userId)) {
+      return res.status(404).json({
+        error: 'Commande introuvable'
       });
     }
     

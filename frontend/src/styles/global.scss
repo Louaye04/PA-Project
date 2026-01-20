@@ -36,6 +36,7 @@ body {
   --muted: #a0a0a0;
   --border-color: #333333;
   --background-light: #1a1a1a;
+  --background: var(--background-light);
   --surface: #2a2a2a;
   --surface-light: #3a3a3a;
   --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -151,4 +152,125 @@ body {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border-width: 0;
+}
+
+/* Ensure native selects and options are readable on dark backgrounds */
+select,
+select:focus,
+select:active,
+.settings-form select {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 1px solid var(--border-color) !important;
+  padding: 8px 10px;
+  border-radius: 8px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Options styling (browser support varies but helps where allowed) */
+select option,
+.settings-form select option {
+  background: #000000;
+  color: #ffffff;
+}
+
+/* Improve contrast for dropdown when placed inside darker cards */
+.card select {
+  background: #000000;
+  color: #ffffff;
+}
+
+/* Remove native background-image to avoid duplicate arrows; use label pseudo-element instead */
+/* (selects keep padding to reserve space for custom arrow) */
+.settings-form select,
+.card select,
+select {
+  padding-right: 44px; /* room for custom arrow */
+}
+
+/* Slightly dim arrow when disabled */
+select:disabled {
+  opacity: 0.6;
+}
+
+/* More robust custom arrow using label pseudo-element for consistent white arrow */
+.select-label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.select-label select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  padding-right: 56px; /* room for custom arrow */
+}
+
+.select-label::after {
+  content: "";
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  right: 12px; /* move slightly closer to the right edge */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  z-index: 3;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><polyline points='6 9 12 15 18 9' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: 14px 14px; /* slightly larger for visibility */
+  opacity: 1;
+}
+/* end .select-label::after */
+/* Specific sizing for the small numeric select in Orders ("Par page")
+   Make the field wider so the number is readable and the arrow sits to the right */
+.filter-group .select-label select {
+  min-width: 96px;
+  width: 96px;
+  padding-left: 12px;
+  padding-right: 52px; /* keep space for arrow */
+  text-align: left; /* number at left, arrow on the right */
+}
+
+.filter-group .select-label::after {
+  right: 10px; /* ensure arrow is just outside the numeric value */
+}
+
+/* Hide arrow for selects with .no-arrow and reduce right padding so only numbers show */
+.filter-group .select-label.no-arrow::after {
+  display: none;
+}
+
+.filter-group .select-label.no-arrow select {
+  padding-right: 12px; /* no extra space for arrow */
+  text-align: center; /* keep the number centered if desired */
+}
+
+/* Ensure native browser arrows are removed for no-arrow selects (cross-browser) */
+/* Ensure native browser arrows are removed for no-arrow selects (cross-browser) */
+.filter-group .select-label.no-arrow select {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-image: none !important;
+  border-radius: 8px;
+}
+
+/* Hide IE/Edge dropdown arrow */
+.filter-group .select-label.no-arrow select::-ms-expand {
+  display: none !important;
+}
+
+/* If select is disabled, dim the arrow */
+.select-label select:disabled + * , .select-label select:disabled ~ * {
+  opacity: 0.6;
 }

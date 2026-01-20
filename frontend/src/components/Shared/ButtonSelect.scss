@@ -1,0 +1,58 @@
+.btn-select-root {
+  position: relative;
+  display: inline-block;
+  font-family: inherit;
+}
+
+.btn-select-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.3) inset;
+}
+
+.btn-select-caret { font-size: 12px; opacity: 0.9 }
+
+.btn-select-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: linear-gradient(#2b2b2b, #1f1f1f);
+  border-radius: 6px;
+  padding: 6px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+  z-index: 40;
+  min-width: 180px;
+}
+
+.btn-select-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  margin: 3px 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-select-item:hover { filter: brightness(1.15) }
+
+/* Status color classes (tuned to image style) */
+.btn-select-toggle.pending, .btn-select-item.pending { background: #2f2f2f; color: #e6e6e6 }
+.btn-select-toggle.accepted, .btn-select-item.accepted { background: #2ea44f; color: #fff }
+.btn-select-toggle.awaiting-payment, .btn-select-item.awaiting-payment { background: #f39c12; color: #fff }
+.btn-select-toggle.paid, .btn-select-item.paid { background: #2ea44f; color: #fff }
+.btn-select-toggle.in-progress, .btn-select-item.in-progress { background: #3b82f6; color: #fff }
+.btn-select-toggle.shipped, .btn-select-item.shipped { background: #0ea5a4; color: #fff }
+.btn-select-toggle.delivered, .btn-select-item.delivered { background: #10b981; color: #fff }
+.btn-select-toggle.cancelled, .btn-select-item.cancelled { background: #ef4444; color: #fff }

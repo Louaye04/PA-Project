@@ -171,3 +171,24 @@ exports.decrementStock = (productId, quantity = 1) => {
 
   return products[index];
 };
+
+// Incrémenter le stock d'un produit (lors d'une annulation)
+exports.incrementStock = (productId, quantity = 1) => {
+  const products = readProducts();
+  const index = products.findIndex((p) => p.id === productId);
+
+  if (index === -1) {
+    const error = new Error('Produit introuvable');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  products[index].stock = (Number(products[index].stock) || 0) + Number(quantity);
+  products[index].updatedAt = new Date().toISOString();
+
+  writeProducts(products);
+
+  console.log('📦 [Products] Stock restauré:', productId, 'nouveau stock:', products[index].stock);
+
+  return products[index];
+};

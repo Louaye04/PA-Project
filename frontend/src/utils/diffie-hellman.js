@@ -1,3 +1,4 @@
+/* global BigInt */
 /**
  * Diffie-Hellman Client-side Cryptography Utilities
  * 

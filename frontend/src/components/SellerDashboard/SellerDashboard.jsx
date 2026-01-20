@@ -1,17 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import './SellerDashboard.scss';
 import Logo from '../Logo/Logo';
 import SecureChat from '../SecureChat/SecureChat';
-import { getMyProducts, createProduct, updateProduct, deleteProduct } from '../../utils/product-api';
-import { getMyOrders, updateOrderStatus } from '../../utils/order-api';
+import { getAllProducts, getMyProducts, createProduct, updateProduct, deleteProduct } from '../../utils/product-api';
+import { getMyOrders, updateOrderStatus, getMyStats } from '../../utils/order-api';
 import { connectWebhook, disconnectWebhook, onWebhookEvent } from '../../utils/webhook-client';
 import { useToast } from '../../contexts/ToastContext';
+import ButtonSelect from '../Shared/ButtonSelect';
 
-const SellerDashboard = ({ userName }) => {
+const SellerDashboard = ({ userName, onLogout }) => {
   const toast = useToast();
 
+  // Format price helper (show in Algerian dinars)
+  const formatPriceDA = (val) => {
+    const n = Number(val) || 0;
+    return n.toLocaleString('fr-FR') + ' DA';
+  };
+
   const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
+  const [allProductsPage, setAllProductsPage] = useState(1);
+  const [allProductsPerPage] = useState(5);
+  const [selectedAllProduct, setSelectedAllProduct] = useState(null);
+  const [showAllProductModal, setShowAllProductModal] = useState(false);
   const [orders, setOrders] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentTab, setCurrentTab] = useState('products');
@@ -65,6 +78,40 @@ const SellerDashboard = ({ userName }) => {
     };
   }, []);
 
+  // Load all site products (for 'Tous les produits' view)
+  const loadAllProducts = async () => {
+    try {
+      const data = await getAllProducts();
+      setAllProducts(data || []);
+    } catch (err) {
+      console.error('Erreur chargement tous les produits:', err);
+    }
+  };
+
+  // When user switches to the all-products tab, fetch data
+  useEffect(() => {
+    if (currentTab === 'all-products') {
+      loadAllProducts();
+    }
+  }, [currentTab]);
+
+  const paginatedAllProducts = (() => {
+    const start = (allProductsPage - 1) * allProductsPerPage;
+    return allProducts.slice(start, start + allProductsPerPage);
+  })();
+
+  const totalAllProductPages = Math.max(1, Math.ceil(allProducts.length / allProductsPerPage));
+
+  const openAllProductDetails = (p) => {
+    setSelectedAllProduct(p);
+    setShowAllProductModal(true);
+  };
+
+  const closeAllProductDetails = () => {
+    setSelectedAllProduct(null);
+    setShowAllProductModal(false);
+  };
+
   const loadData = async (silent = false) => {
     try {
       if (!silent) {
@@ -80,14 +127,31 @@ const SellerDashboard = ({ userName }) => {
         return;
       }
 
-      const [productsData, ordersData] = await Promise.all([
-        getMyProducts(),
-        getMyOrders()
-      ]);
+      // Fetch seller products and orders
+      try {
+        const myProductsData = await getMyProducts();
+        setProducts(myProductsData || []);
+      } catch (err) {
+        console.error('Erreur récupération mes produits:', err);
+        if (!silent) setError(err.response?.data?.error || 'Erreur récupération produits');
+      }
 
-      setProducts(productsData || []);
-      setOrders(ordersData || []);
-      setError(null);
+      try {
+        const myOrdersData = await getMyOrders();
+        setOrders(myOrdersData || []);
+      } catch (err) {
+        console.error('Erreur récupération commandes:', err);
+      }
+
+      // Récupérer les statistiques serveur (source de vérité pour les revenus)
+      try {
+        const s = await getMyStats();
+        setStats(s || null);
+      } catch (err) {
+        console.error('Erreur récupération stats:', err);
+        setStats(null);
+      }
+
     } catch (err) {
       console.error('Erreur chargement données:', err);
       if (!silent) {
@@ -117,7 +181,12 @@ const SellerDashboard = ({ userName }) => {
 
   const handleLogout = () => {
     try { localStorage.removeItem('authToken'); localStorage.removeItem('userEmail'); localStorage.removeItem('userName'); } catch (e) { }
-    window.location.reload();
+    if (onLogout) {
+      onLogout();
+    } else {
+      // fallback: reload the page
+      window.location.reload();
+    }
   };
 
   const saveProduct = async (prod) => {
@@ -215,9 +284,20 @@ const SellerDashboard = ({ userName }) => {
   };
 
   const getStatusBadge = (status) => {
+    // New status set:
+    // - pending: Commandes en attente
+    // - awaiting_payment: Commandes en attente de paiement
+    // - paid: Commandes payées
+    // - in_progress: Commandes en cours
+    // - shipped: Commandes expédiées
+    // - delivered: Commandes livrées
+    // - cancelled: Annulées
     const statusMap = {
+      accepted: { label: 'Acceptée', class: 'status-accepted' },
       pending: { label: 'En attente', class: 'status-pending' },
-      confirmed: { label: 'Confirmée', class: 'status-confirmed' },
+      awaiting_payment: { label: 'En attente de paiement', class: 'status-awaiting-payment' },
+      paid: { label: 'Payée', class: 'status-paid' },
+      in_progress: { label: 'En cours', class: 'status-in-progress' },
       shipped: { label: 'Expédiée', class: 'status-shipped' },
       delivered: { label: 'Livrée', class: 'status-delivered' },
       cancelled: { label: 'Annulée', class: 'status-cancelled' }
@@ -244,7 +324,27 @@ const SellerDashboard = ({ userName }) => {
   }
 
   const pendingOrders = orders.filter(o => o.status === 'pending').length;
-  const totalRevenue = orders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + o.totalPrice, 0);
+  // Calcul du chiffre d'affaires : inclure les commandes payées et livrées
+  // Normalize status strings and compute revenue (align with backend)
+  const normalizeStatus = (s) => {
+    if (!s) return '';
+    const st = String(s).toLowerCase().trim();
+    if (st.includes('paid') || st === 'payée' || st === 'payee') return 'paid';
+    if (st.includes('deliv') || st.includes('livr')) return 'delivered';
+    if (st.includes('in_progress') || st.includes('in progress') || st.includes('en cours')) return 'in_progress';
+    if (st.includes('await') || st.includes('en attente') || st.includes('awaiting')) return 'awaiting_payment';
+    if (st.includes('cancel') || st.includes('annul')) return 'cancelled';
+    if (st === 'accepted' || st === 'acceptée' || st === 'acceptee') return 'accepted';
+    if (st === 'pending' || st === 'en attente') return 'pending';
+    return st;
+  };
+
+  const revenueStatuses = ['paid', 'delivered', 'in_progress'];
+  const totalRevenueLocal = orders
+    .filter(o => revenueStatuses.includes(normalizeStatus(o.status)))
+    .reduce((sum, o) => sum + (Number(o.totalPrice) || 0), 0);
+  // Prefer server-provided stats when available
+  const totalRevenue = (stats && typeof stats.totalRevenue === 'number') ? stats.totalRevenue : totalRevenueLocal;
 
   return (
     <div className="seller-dashboard-root">
@@ -256,6 +356,9 @@ const SellerDashboard = ({ userName }) => {
         <nav className="sidebar-nav">
           <button className={currentTab === 'products' ? 'active' : ''} onClick={() => setCurrentTab('products')}>
             📦 Mes Produits
+          </button>
+          <button className={currentTab === 'all-products' ? 'active' : ''} onClick={() => setCurrentTab('all-products')}>
+            🛒 Tous les produits
           </button>
           <button className={currentTab === 'orders' ? 'active' : ''} onClick={() => setCurrentTab('orders')}>
             📋 Commandes
@@ -312,7 +415,7 @@ const SellerDashboard = ({ userName }) => {
                       <h3 className="product-name">{p.name}</h3>
                       <p className="product-desc">{p.desc}</p>
                       <div className="product-meta">
-                        <span className="product-price">{p.price} DA</span>
+                        <span className="product-price">{formatPriceDA(p.price)}</span>
                         <span className="product-stock">Stock: {p.stock}</span>
                       </div>
                     </div>
@@ -323,6 +426,87 @@ const SellerDashboard = ({ userName }) => {
                   </article>
                 ))}
               </div>
+            )}
+          </section>
+        )}
+
+        {currentTab === 'all-products' && (
+          <section className="all-products-view">
+            <h2>Tous les produits du site</h2>
+            {allProducts.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">🛒</div>
+                <p>Aucun produit trouvé sur le site.</p>
+              </div>
+            ) : (
+              <>
+                <div className="all-products-table">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Image</th>
+                        <th>Nom</th>
+                        <th>Prix</th>
+                        <th>Stock</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedAllProducts.map((p, idx) => (
+                        <tr key={p.id}>
+                          <td>{(allProductsPage - 1) * allProductsPerPage + idx + 1}</td>
+                          <td className="img-cell">
+                            {p.image ? <img src={p.image} alt={p.name} /> : <div className="thumb">📦</div>}
+                          </td>
+                          <td className="name-cell">{p.name}</td>
+                          <td className="price-cell">{formatPriceDA(p.price)}</td>
+                          <td className="stock-cell">{p.stock}</td>
+                          <td className="actions-cell">
+                            <button className="btn details-btn" onClick={() => openAllProductDetails(p)}>Details</button>
+                            {/* No edit/delete here for site-wide products (read-only for seller) */}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="all-products-footer">
+                  <div className="count">{(allProductsPage - 1) * allProductsPerPage + 1} - {Math.min(allProductsPage * allProductsPerPage, allProducts.length)} / {allProducts.length} produits</div>
+                  <div className="pagination">
+                    <button className="page-btn" disabled={allProductsPage === 1} onClick={() => setAllProductsPage(1)}>««</button>
+                    <button className="page-btn" disabled={allProductsPage === 1} onClick={() => setAllProductsPage(prev => Math.max(1, prev - 1))}>‹</button>
+                    <span className="page-numbers">Page {allProductsPage} / {totalAllProductPages}</span>
+                    <button className="page-btn" disabled={allProductsPage === totalAllProductPages} onClick={() => setAllProductsPage(prev => Math.min(totalAllProductPages, prev + 1))}>›</button>
+                    <button className="page-btn" disabled={allProductsPage === totalAllProductPages} onClick={() => setAllProductsPage(totalAllProductPages)}>»»</button>
+                  </div>
+                </div>
+
+                {showAllProductModal && selectedAllProduct && (
+                  <div className="sd-modal" role="dialog" aria-modal="true">
+                    <div className="sd-modal-backdrop" onClick={closeAllProductDetails} />
+                    <div className="sd-modal-panel">
+                      <h3>Détails du produit</h3>
+                      <div style={{ display: 'flex', gap: 16 }}>
+                        <div style={{ width: 160 }}>
+                          {selectedAllProduct.image ? <img src={selectedAllProduct.image} alt={selectedAllProduct.name} style={{ width: '100%', borderRadius: 8 }} /> : <div style={{ height: 120, background: 'rgba(255,255,255,0.03)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📦</div>}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <h4>{selectedAllProduct.name}</h4>
+                          <p style={{ color: 'var(--text-secondary)' }}>{selectedAllProduct.desc}</p>
+                          <p><strong>Prix:</strong> {formatPriceDA(selectedAllProduct.price)}</p>
+                          <p><strong>Stock:</strong> {selectedAllProduct.stock}</p>
+                          <p><strong>Vendeur:</strong> {selectedAllProduct.sellerName || selectedAllProduct.owner || '—'}</p>
+                        </div>
+                      </div>
+                      <div style={{ marginTop: 16, textAlign: 'right' }}>
+                        <button className="btn ghost" onClick={closeAllProductDetails}>Fermer</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </section>
         )}
@@ -359,14 +543,19 @@ const SellerDashboard = ({ userName }) => {
 
               <div className="filter-group">
                 <label>Statut:</label>
-                <select value={orderStatusFilter} onChange={(e) => { setOrderStatusFilter(e.target.value); setCurrentOrderPage(1); }}>
-                  <option value="all">Tous</option>
-                  <option value="pending">En attente</option>
-                  <option value="confirmed">Confirmée</option>
-                  <option value="shipped">Expédiée</option>
-                  <option value="delivered">Livrée</option>
-                  <option value="cancelled">Annulée</option>
-                </select>
+                <label className="select-label">
+                  <select value={orderStatusFilter} onChange={(e) => { setOrderStatusFilter(e.target.value); setCurrentOrderPage(1); }}>
+                    <option value="all">Tous</option>
+                    <option value="pending">Commandes en attente</option>
+                    <option value="accepted">Commandes acceptées</option>
+                    <option value="awaiting_payment">Commandes en attente de paiement</option>
+                    <option value="paid">Commandes payées</option>
+                    <option value="in_progress">Commandes en cours</option>
+                    <option value="shipped">Commandes expédiées</option>
+                    <option value="delivered">Commandes livrées</option>
+                    <option value="cancelled">Annulées</option>
+                  </select>
+                </label>
               </div>
 
               <div className="filter-group">
@@ -437,19 +626,36 @@ const SellerDashboard = ({ userName }) => {
                           <td className="text-center">×{o.quantity}</td>
                           <td className="text-right price-cell">{o.totalPrice.toLocaleString()} DA</td>
                           <td>
-                            <select
-                              className="status-select"
-                              value={o.status}
-                              onChange={(e) => handleUpdateOrderStatus(o.id, e.target.value)}
-                            >
-                              <option value="pending">En attente</option>
-                              <option value="confirmed">Confirmée</option>
-                              <option value="shipped">Expédiée</option>
-                              <option value="delivered">Livrée</option>
-                              <option value="cancelled">Annulée</option>
-                            </select>
+                            {/* Button-style select */}
+                            <div className="status-button-wrapper">
+                              {/** lazy-load shared component to avoid breaking imports */}
+                              <React.Suspense fallback={<div className="status-fallback">{o.status}</div>}>
+                                <ButtonSelect
+                                  value={o.status}
+                                  options={[
+                                    { value: 'pending', label: 'En attente' },
+                                    { value: 'accepted', label: 'Acceptée' },
+                                    { value: 'awaiting_payment', label: 'En attente de paiement' },
+                                    { value: 'paid', label: 'Payée' },
+                                    { value: 'in_progress', label: 'En cours' },
+                                    { value: 'shipped', label: 'Expédiée' },
+                                    { value: 'delivered', label: 'Livrée' },
+                                    { value: 'cancelled', label: 'Annulée' },
+                                  ]}
+                                  onChange={(newStatus) => handleUpdateOrderStatus(o.id, newStatus)}
+                                />
+                              </React.Suspense>
+                            </div>
                           </td>
                           <td>
+                            {o.status === 'pending' && (
+                              <button
+                                className="accept-btn"
+                                onClick={() => handleUpdateOrderStatus(o.id, 'accepted')}
+                              >
+                                Accepter la commande
+                              </button>
+                            )}
                             <button
                               className="chat-btn"
                               onClick={() => {
@@ -592,6 +798,7 @@ const SellerDashboard = ({ userName }) => {
 export default SellerDashboard;
 
 function ProductForm({ product: initial, onSave, onCancel }) {
+  const toast = useToast();
   const [p, setP] = useState(() => ({
     name: initial.name || '',
     price: initial.price || '',
@@ -601,12 +808,65 @@ function ProductForm({ product: initial, onSave, onCancel }) {
     ...(initial.id && { id: initial.id })
   }));
 
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    // Only images
+    if (!file.type.startsWith('image/')) return;
+
+    // Allow very large images up to ~20 TB per user request.
+    // WARNING: loading huge files into memory will likely crash the browser.
+    const MAX_BYTES = 20 * 1024 ** 4; // ~21990232555520 bytes (20 TB)
+    if (file.size > MAX_BYTES) {
+      const msg = 'Image trop volumineuse (max 20TB). Choisissez une image plus petite.';
+      if (typeof toast?.error === 'function') {
+        toast.error(msg);
+      } else {
+        alert(msg);
+      }
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setP(prev => ({ ...prev, image: reader.result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setP(prev => ({ ...prev, [name]: name === 'price' || name === 'stock' ? Number(value) : value }));
   };
+
+  const isFormValid = () => {
+    const nameOk = p.name && String(p.name).trim().length > 0;
+    const descOk = p.desc && String(p.desc).trim().length > 0;
+    const priceNum = Number(p.price);
+    const stockNum = Number(p.stock);
+    const priceOk = Number.isFinite(priceNum) && priceNum > 0;
+    const stockOk = Number.isFinite(stockNum) && stockNum >= 0;
+    const imageOk = p.image && String(p.image).trim().length > 0;
+    return nameOk && descOk && priceOk && stockOk && imageOk;
+  };
+
+  const handleSubmitProduct = (e) => {
+    e.preventDefault();
+    if (!isFormValid()) {
+      // simple UX: focus first invalid field
+      if (!p.name || String(p.name).trim().length === 0) {
+        const el = document.querySelector('.product-form [name="name"]');
+        if (el) el.focus();
+      }
+      return;
+    }
+    onSave(p);
+  };
+
   return (
-    <form className="product-form" onSubmit={(e) => { e.preventDefault(); onSave(p); }}>
+    <form className="product-form" onSubmit={handleSubmitProduct}>
       <h3>{initial.id ? 'Modifier le produit' : 'Ajouter un produit'}</h3>
       <label>Nom
         <input name="name" value={p.name} onChange={handleChange} required />
@@ -620,14 +880,19 @@ function ProductForm({ product: initial, onSave, onCancel }) {
       <label>Description
         <textarea name="desc" value={p.desc} onChange={handleChange} />
       </label>
-      <label>Image URL
-        <input name="image" type="url" placeholder="https://example.com/image.jpg" value={p.image || ''} onChange={handleChange} />
-        <small style={{ color: 'var(--muted)', fontSize: '12px', marginTop: '4px', display: 'block' }}>
-          Entrez l'URL d'une image (optionnel)
-        </small>
-      </label>
+      <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center' }}>
+        <button type="button" className="btn" onClick={() => fileInputRef.current && fileInputRef.current.click()}>
+          Ajouter une image
+        </button>
+        {p.image && (
+          <div style={{ width: 80, height: 60, borderRadius: 8, overflow: 'hidden', boxShadow: '0 6px 18px rgba(0,0,0,0.6)' }}>
+            <img src={p.image} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
+        )}
+        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
+      </div>
       <div className="modal-actions">
-        <button type="submit" className="btn">Enregistrer</button>
+        <button type="submit" className="btn" disabled={!isFormValid()} aria-disabled={!isFormValid()}>Enregistrer</button>
         <button type="button" className="btn ghost" onClick={onCancel}>Annuler</button>
       </div>
     </form>

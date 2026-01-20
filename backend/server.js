@@ -31,7 +31,12 @@ const userRoutes = require("./routes/user.routes");
 const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+let PORT = process.env.PORT ? Number(process.env.PORT) : 5000;
+// Avoid accidentally binding backend to frontend dev port (3000)
+if (PORT === 3000) {
+  console.warn('Warning: PORT 3000 is typically used by the frontend dev server. Forcing backend to use 5000 to avoid conflict.');
+  PORT = 5000;
+}
 
 // Security middleware
 app.use(helmet());
@@ -66,7 +71,12 @@ const limiter = rateLimit({
   message: "Too many requests from this IP, please try again later.",
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => req.originalUrl.startsWith('/api/dh/messages'),
+  // Skip rate limiting during local development or for specific endpoints
+  skip: (req) => {
+    if (process.env.NODE_ENV === 'development') return true;
+    if (req.originalUrl && req.originalUrl.startsWith('/api/dh/messages')) return true;
+    return false;
+  }
 });
 app.use("/api/", limiter);
 
@@ -81,8 +91,11 @@ const dhMessageLimiter = rateLimit({
 app.use('/api/dh/messages', dhMessageLimiter);
 
 // Body parser middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Allow very large payloads when requested (WARNING: large values may exhaust memory).
+// 20 TB = 20 * 1024^4 = 21990232555520 bytes
+const LARGE_UPLOAD_LIMIT_BYTES = '21990232555520';
+app.use(express.json({ limit: LARGE_UPLOAD_LIMIT_BYTES }));
+app.use(express.urlencoded({ extended: true, limit: LARGE_UPLOAD_LIMIT_BYTES }));
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {

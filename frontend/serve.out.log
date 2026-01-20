@@ -1,0 +1,15 @@
+ INFO  Accepting connections at http://localhost:3000
+ HTTP  12/29/2025 9:13:41 PM ::1 GET /
+ HTTP  12/29/2025 9:13:41 PM ::1 Returned 200 in 71 ms
+ HTTP  12/29/2025 9:14:35 PM ::1 GET /
+ HTTP  12/29/2025 9:14:35 PM ::1 Returned 200 in 3 ms
+ HTTP  12/29/2025 9:14:35 PM ::1 GET /static/css/main.d671f516.css
+ HTTP  12/29/2025 9:14:35 PM ::1 GET /static/js/main.8f0e1b97.js
+ HTTP  12/29/2025 9:14:35 PM ::1 Returned 200 in 78 ms
+ HTTP  12/29/2025 9:14:35 PM ::1 Returned 200 in 86 ms
+ HTTP  12/29/2025 9:14:35 PM ::1 GET /interface-ecommerce.png
+ HTTP  12/29/2025 9:14:35 PM ::1 GET /favicon.svg
+ HTTP  12/29/2025 9:14:35 PM ::1 Returned 200 in 10 ms
+ HTTP  12/29/2025 9:14:35 PM ::1 Returned 200 in 21 ms
+ HTTP  12/29/2025 9:14:35 PM ::1 GET /favicon.svg
+ HTTP  12/29/2025 9:14:35 PM ::1 Returned 304 in 1 ms

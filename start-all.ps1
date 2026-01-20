@@ -6,6 +6,9 @@ Write-Host "`nStarting Backend Server (Port 5000)..." -ForegroundColor Green
 $backendPath = "$PSScriptRoot\backend"
 $backendJob = Start-Job -ScriptBlock {
     param($path)
+    # Ensure backend uses a dedicated port and development mode
+    $env:NODE_ENV = 'development'
+    $env:PORT = '5000'
     Set-Location $path
     node server.js
 } -ArgumentList $backendPath

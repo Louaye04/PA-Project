@@ -15,12 +15,7 @@ const Login = ({ onSwitchToSignup, onLoginSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  // NEW: Email OTP state
-  const [requiresOTP, setRequiresOTP] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [sessionId, setSessionId] = useState('');
-  const [canResendAt, setCanResendAt] = useState(null);
-  const [resendCooldown, setResendCooldown] = useState(0);
+  // (OTP removed) no OTP state
 
   // NEW: Role selection state for multi-role users
   const [availableRoles, setAvailableRoles] = useState([]);
@@ -90,46 +85,15 @@ const Login = ({ onSwitchToSignup, onLoginSuccess }) => {
       // Send only email and password, let backend determine user role
       const response = await axios.post(`${API_BASE_URL}/api/auth/login`, formData);
 
-      // NEW: Check if OTP verification is required
-      if (response.data.requiresOTP) {
-        setRequiresOTP(true);
-        setSessionId(response.data.sessionId);
-        setCanResendAt(response.data.canResendAt);
-
-        // Check if user has multiple roles
-        const userRoles = response.data.user?.roles || [response.data.user?.role];
-        setAvailableRoles(userRoles);
-
-        // Auto-select buyer if available, otherwise first role
-        const defaultRole = userRoles.includes('buyer') ? 'buyer' : userRoles[0];
-        setSelectedRole(defaultRole);
-
-        // Show role selection if user has multiple roles
-        if (userRoles.length > 1) {
-          setShowRoleSelection(true);
-        }
-
-        setMessage({
-          type: 'info',
-          text: response.data.message || 'Verification code sent to your email'
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      // Fallback for backward compatibility (if OTP not yet implemented)
+      // Store token and user data when provided
       if (response.data.token) {
-        localStorage.setItem('authToken', response.data.token);
-
-        // Persist user data
         try {
+          localStorage.setItem('authToken', response.data.token);
           const emailForStore = response.data?.user?.email || formData.email;
           const name = response.data?.user?.name || response.data?.user?.email || formData.email;
           if (emailForStore) localStorage.setItem('userEmail', emailForStore);
           if (name) localStorage.setItem('userName', name);
-        } catch (e) {
-          // ignore storage errors
-        }
+        } catch (e) {}
       }
 
       setMessage({
@@ -199,148 +163,7 @@ const Login = ({ onSwitchToSignup, onLoginSuccess }) => {
     }
   };
 
-  // NEW: Handle OTP verification
-  const handleVerifyOTP = async (e) => {
-    e.preventDefault();
-
-    if (!otpCode || otpCode.length !== 6) {
-      setMessage({
-        type: 'error',
-        text: 'Please enter a valid 6-digit code'
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    setMessage({ type: '', text: '' });
-
-    try {
-      const response = await axios.post(`${API_BASE_URL}/api/auth/verify-otp`, {
-        email: formData.email,
-        otp: otpCode,
-        sessionId: sessionId,
-        selectedRole: selectedRole // Send selected role for JWT token
-      });
-
-      // Store token and user data
-      if (response.data.token) {
-        localStorage.setItem('authToken', response.data.token);
-
-        try {
-          const emailForStore = response.data?.user?.email || formData.email;
-          const name = response.data?.user?.name || response.data?.user?.email || formData.email;
-          if (emailForStore) localStorage.setItem('userEmail', emailForStore);
-          if (name) localStorage.setItem('userName', name);
-        } catch (e) {
-          // ignore storage errors
-        }
-      }
-
-      setMessage({
-        type: 'success',
-        text: 'Login successful! Redirecting...'
-      });
-
-      // Reset form and OTP state
-      setFormData({ email: '', password: '' });
-      setOtpCode('');
-      setRequiresOTP(false);
-      setSessionId('');
-      setAvailableRoles([]);
-      setSelectedRole('');
-      setShowRoleSelection(false);
-
-      // Navigate to dashboard after a short delay
-      setTimeout(() => {
-        if (onLoginSuccess) {
-          console.log('Calling onLoginSuccess callback');
-          onLoginSuccess();
-        } else {
-          console.warn('onLoginSuccess callback not provided - using fallback navigation');
-          // Fallback navigation
-          window.history.pushState({}, '', '/dashboard');
-          window.location.reload();
-        }
-      }, 1000);
-
-    } catch (error) {
-      let errorMessage = 'Invalid verification code. Please try again.';
-
-      if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-
-      setMessage({
-        type: 'error',
-        text: errorMessage
-      });
-
-      console.error('OTP verification error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // NEW: Handle OTP resend
-  const handleResendOTP = async () => {
-    if (resendCooldown > 0) {
-      return;
-    }
-
-    setIsLoading(true);
-    setMessage({ type: '', text: '' });
-
-    try {
-      const response = await axios.post(`${API_BASE_URL}/api/auth/resend-otp`, {
-        email: formData.email
-      });
-
-      setSessionId(response.data.sessionId);
-      setCanResendAt(response.data.canResendAt);
-      setOtpCode('');
-
-      setMessage({
-        type: 'success',
-        text: 'New verification code sent!'
-      });
-
-    } catch (error) {
-      let errorMessage = 'Failed to resend code. Please try again.';
-
-      if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-
-      setMessage({
-        type: 'error',
-        text: errorMessage
-      });
-
-      console.error('OTP resend error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // NEW: Resend cooldown timer
-  useEffect(() => {
-    if (!canResendAt) return;
-
-    const interval = setInterval(() => {
-      const remaining = Math.max(0, Math.ceil((canResendAt - Date.now()) / 1000));
-      setResendCooldown(remaining);
-
-      if (remaining === 0) {
-        clearInterval(interval);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [canResendAt]);
+  // OTP removed: no handlers or timers required
 
   /* ============================================
      COMMENTED OUT - OLD MFA/GOOGLE AUTHENTICATOR HANDLER
@@ -532,7 +355,6 @@ const Login = ({ onSwitchToSignup, onLoginSuccess }) => {
 
             {/* Removed role selection - user role determined by backend */}
 
-            {!requiresOTP && (
               <button
                 type="submit"
                 className="submit-button"
@@ -567,144 +389,11 @@ const Login = ({ onSwitchToSignup, onLoginSuccess }) => {
                   'Sign In'
                 )}
               </button>
-            )}
           </>
           {/* ============================================ */}
         </form>
 
-        {/* NEW: Email OTP Verification Modal */}
-        {requiresOTP && (
-          <div className="modal-overlay">
-            <div className="modal-content otp-modal" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <div className="modal-icon">
-                  <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <h2 className="modal-title">Verify Your Email</h2>
-                <p className="modal-subtitle">We've sent a 6-digit code to <strong>{formData.email}</strong></p>
-              </div>
-
-              <form onSubmit={handleVerifyOTP} className="modal-body">
-                {/* Role selection - only show if user has multiple roles */}
-                {showRoleSelection && availableRoles.length > 1 && (
-                  <div className="form-group role-group">
-                    <label className="form-label">Sélectionner votre rôle</label>
-                    <div className="modal-role-options-inline">
-                      {availableRoles.includes('buyer') && (
-                        <label className="modal-role-option-inline">
-                          <input
-                            type="radio"
-                            name="loginRole"
-                            value="buyer"
-                            checked={selectedRole === 'buyer'}
-                            onChange={(e) => setSelectedRole(e.target.value)}
-                          />
-                          <div className="role-card-inline">
-                            <div className="role-icon-inline">
-                              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                              </svg>
-                            </div>
-                            <span>Acheteur</span>
-                            <div className="role-checkmark-inline">
-                              <svg viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                          </div>
-                        </label>
-                      )}
-                      {availableRoles.includes('seller') && (
-                        <label className="modal-role-option-inline">
-                          <input
-                            type="radio"
-                            name="loginRole"
-                            value="seller"
-                            checked={selectedRole === 'seller'}
-                            onChange={(e) => setSelectedRole(e.target.value)}
-                          />
-                          <div className="role-card-inline">
-                            <div className="role-icon-inline">
-                              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                              </svg>
-                            </div>
-                            <span>Vendeur</span>
-                            <div className="role-checkmark-inline">
-                              <svg viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                          </div>
-                        </label>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <div className="form-group">
-                  <label htmlFor="otpCode" className="form-label">
-                    Verification Code
-                  </label>
-                  <input
-                    type="text"
-                    id="otpCode"
-                    value={otpCode}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                      setOtpCode(value);
-                    }}
-                    className="form-input otp-input"
-                    placeholder="000000"
-                    maxLength="6"
-                    autoComplete="one-time-code"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                  />
-                </div>
-
-                <div className="modal-footer">
-                  <button
-                    type="submit"
-                    className="modal-btn-primary"
-                    disabled={isLoading || otpCode.length !== 6}
-                    aria-busy={isLoading}
-                  >
-                    {isLoading ? 'Verifying...' : 'Verify & Login'}
-                  </button>
-
-                  <div className="otp-actions">
-                    <button
-                      type="button"
-                      onClick={handleResendOTP}
-                      className="modal-btn-secondary"
-                      disabled={isLoading || resendCooldown > 0}
-                    >
-                      {resendCooldown > 0
-                        ? `Resend in ${resendCooldown}s`
-                        : 'Resend Code'}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRequiresOTP(false);
-                        setOtpCode('');
-                        setMessage({ type: '', text: '' });
-                      }}
-                      className="modal-btn-text"
-                      disabled={isLoading}
-                    >
-                      ← Back to Login
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        {/* OTP removed */}
 
         <div className="login-footer">
           <p className="signup-text">

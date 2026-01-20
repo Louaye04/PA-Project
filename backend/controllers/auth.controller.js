@@ -34,23 +34,14 @@ exports.signup = async (req, res, next) => {
       birthCity
     );
 
-    // Send OTP email for verification
-    const ipAddress = req.ip || req.connection.remoteAddress;
-    const otpResult = await authService.sendSignupOTP(email, name, ipAddress);
-
+    // Directly issue token after signup (OTP removed)
+    const issued = authService.issueTokenForUser(result.user);
     res.status(201).json({
       success: true,
-      message: "Account created! Please verify your email with the code sent.",
-      requiresOTP: true,
-      sessionId: otpResult.sessionId,
-      expiresIn: otpResult.expiresIn,
-      canResendAt: otpResult.canResendAt,
-      user: {
-        email: result.user.email,
-        name: result.user.name,
-        roles: result.user.roles || [result.user.role],
-        role: result.user.role, // Keep for backward compatibility
-      },
+      message: "Account created and logged in.",
+      requiresOTP: false,
+      token: issued.token,
+      user: issued.user,
     });
   } catch (error) {
     next(error);
@@ -94,44 +85,14 @@ exports.login = async (req, res, next) => {
       password,
       requestedRole
     );
-    // If user is admin, bypass OTP and issue token immediately
-    const userRoles =
-      result.user.roles || (result.user.role ? [result.user.role] : ["buyer"]);
-    if (userRoles.includes("admin")) {
-      // Issue token directly for admin
-      const issued = authService.issueTokenForUser(result.user, requestedRole);
-      return res.status(200).json({
-        success: true,
-        requiresOTP: false,
-        message: "Login successful",
-        token: issued.token,
-        user: issued.user,
-      });
-    }
-
-    // Send OTP email for verification for non-admin users
-    const ipAddress = req.ip || req.connection.remoteAddress;
-    const otpResult = await authService.sendLoginOTP(
-      email,
-      result.user.name,
-      ipAddress
-    );
-
-    // Return OTP requirement response
-    res.status(200).json({
+    // Issue token immediately after successful credential verification
+    const issued = authService.issueTokenForUser(result.user, requestedRole);
+    return res.status(200).json({
       success: true,
-      requiresOTP: true,
-      message:
-        "Credentials verified. Please enter the code sent to your email.",
-      sessionId: otpResult.sessionId,
-      expiresIn: otpResult.expiresIn,
-      canResendAt: otpResult.canResendAt,
-      user: {
-        email: result.user.email,
-        name: result.user.name,
-        roles: result.user.roles || [result.user.role],
-        role: requestedRole || result.user.role, // Selected role
-      },
+      requiresOTP: false,
+      message: "Login successful",
+      token: issued.token,
+      user: issued.user,
     });
   } catch (error) {
     next(error);
@@ -162,19 +123,10 @@ exports.verifyOTP = async (req, res, next) => {
       });
     }
 
-    // Verify OTP and issue JWT token with selected role
-    const result = await authService.verifyEmailOTP(
-      email,
-      otp,
-      sessionId,
-      selectedRole
-    );
-
-    res.status(200).json({
-      success: true,
-      message: "Email verified successfully",
-      token: result.token,
-      user: result.user,
+    // OTP flow has been removed; respond with informative message
+    return res.status(410).json({
+      success: false,
+      message: "OTP verification is disabled for this site.",
     });
   } catch (error) {
     next(error);
@@ -230,16 +182,10 @@ exports.resendOTP = async (req, res, next) => {
       });
     }
 
-    // Resend OTP
-    const ipAddress = req.ip || req.connection.remoteAddress;
-    const result = await authService.resendOTP(email, user.name, ipAddress);
-
-    res.status(200).json({
-      success: true,
-      message: "New verification code sent",
-      sessionId: result.sessionId,
-      expiresIn: result.expiresIn,
-      canResendAt: result.canResendAt,
+    // OTP flow removed — inform client
+    return res.status(410).json({
+      success: false,
+      message: "OTP/resend is disabled on this site.",
     });
   } catch (error) {
     next(error);

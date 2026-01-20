@@ -71,6 +71,25 @@ exports.createProduct = async (req, res, next) => {
 
     const { name, price, stock, desc, image } = req.body;
 
+    // Serveur-side: refuser les images trop volumineuses avec message clair
+    // Augmenté à 20 TB sur demande (20 * 1024^4 = 21990232555520 bytes)
+    const MAX_IMAGE_BYTES = 20 * 1024 ** 4; // ~21990232555520 bytes (20 TB)
+    if (image) {
+      // si on reçoit un data URL (data:...;base64,AAAA...), extraire la partie base64
+      let base64 = image;
+      const commaIdx = base64.indexOf(',');
+      if (commaIdx !== -1) {
+        base64 = base64.slice(commaIdx + 1);
+      }
+      // estimer la taille en octets depuis la longueur de la chaîne base64
+      const imageSizeBytes = Math.ceil((base64.length * 3) / 4);
+      if (imageSizeBytes > MAX_IMAGE_BYTES) {
+        return res.status(413).json({
+          error: 'Image trop volumineuse (max 2MB). Réduisez la taille et réessayez.'
+        });
+      }
+    }
+
     const product = productService.createProduct({
       name,
       price,

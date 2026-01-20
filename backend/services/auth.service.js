@@ -596,9 +596,19 @@ exports.sendSignupOTP = async (email, userName, ipAddress) => {
     const result = await emailService.sendOTPEmail(email, userName, ipAddress);
     return result;
   } catch (error) {
-    // Log removed
-    const err = new Error(error.message || "Failed to send verification code");
+    // Hide internal SMTP/auth errors from clients to avoid leaking details
+    const isSmtpError =
+      (error && error.message && /smtp|auth|invalid login|535|BadCredentials/i.test(error.message)) ||
+      (error && error.original && error.original.message && /smtp|auth|invalid login|535|BadCredentials/i.test(error.original.message));
+
+    const clientMessage = isSmtpError
+      ? "Impossible d'envoyer l'e-mail de vérification pour le moment. Contactez l'administrateur."
+      : (error.message || "Failed to send verification code");
+
+    const err = new Error(clientMessage);
     err.statusCode = 500;
+    // keep original for server-side debugging
+    err.original = error;
     throw err;
   }
 };
@@ -612,9 +622,17 @@ exports.sendLoginOTP = async (email, userName, ipAddress) => {
     const result = await emailService.sendOTPEmail(email, userName, ipAddress);
     return result;
   } catch (error) {
-    // Log removed
-    const err = new Error(error.message || "Failed to send verification code");
+    const isSmtpError =
+      (error && error.message && /smtp|auth|invalid login|535|BadCredentials/i.test(error.message)) ||
+      (error && error.original && error.original.message && /smtp|auth|invalid login|535|BadCredentials/i.test(error.original.message));
+
+    const clientMessage = isSmtpError
+      ? "Impossible d'envoyer l'e-mail de vérification pour le moment. Contactez l'administrateur."
+      : (error.message || "Failed to send verification code");
+
+    const err = new Error(clientMessage);
     err.statusCode = 500;
+    err.original = error;
     throw err;
   }
 };
@@ -628,11 +646,17 @@ exports.resendOTP = async (email, userName, ipAddress) => {
     const result = await emailService.sendOTPEmail(email, userName, ipAddress);
     return result;
   } catch (error) {
-    // Log removed
-    const err = new Error(
-      error.message || "Failed to resend verification code"
-    );
-    err.statusCode = 429; // Too Many Requests
+    const isSmtpError =
+      (error && error.message && /smtp|auth|invalid login|535|BadCredentials/i.test(error.message)) ||
+      (error && error.original && error.original.message && /smtp|auth|invalid login|535|BadCredentials/i.test(error.original.message));
+
+    const clientMessage = isSmtpError
+      ? "Impossible d'envoyer l'e-mail de vérification pour le moment. Contactez l'administrateur."
+      : (error.message || "Failed to resend verification code");
+
+    const err = new Error(clientMessage);
+    err.statusCode = isSmtpError ? 502 : 429; // Bad Gateway for SMTP issues
+    err.original = error;
     throw err;
   }
 };
