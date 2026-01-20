@@ -59,6 +59,9 @@ A modern, full-stack authentication system built with React and Node.js, featuri
    - Backend API: http://localhost:5000
    - Health Check: http://localhost:5000/api/health
 
+   <!-- Redeploy trigger: small innocuous change to force a new Git commit and trigger Vercel redeploy -->
+   Redeploy-trigger: 2026-01-20T05:10:00Z
+
 ### Testing the Connection
 
 Before starting the frontend, you can test if the backend is working:
