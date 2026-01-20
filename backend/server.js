@@ -106,6 +106,15 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Also expose a health endpoint without the /api prefix to support serverless rewrites
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "OK",
+    message: "Server is running (root health)",
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/dh", dhRoutes);
