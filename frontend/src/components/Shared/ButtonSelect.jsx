@@ -46,7 +46,7 @@ export default function ButtonSelect({ value, options = [], onChange, ariaLabel 
       {open && (
         <ul className="btn-select-menu" role="listbox">
           {options.map(opt => (
-            <li key={opt.value} role="option">
+            <li key={opt.value} role="option" aria-selected={value === opt.value}>
               <button
                 type="button"
                 className={`btn-select-item ${statusClass(opt.value)}`}

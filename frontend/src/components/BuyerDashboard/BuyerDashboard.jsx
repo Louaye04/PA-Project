@@ -290,31 +290,7 @@ const BuyerDashboard = ({ userName }) => {
 
   // Normalize legacy/french status labels to internal keys (declaration above)
 
-  // Render a horizontal flow showing the full order lifecycle and highlight the current status
-  const renderStatusFlow = (currentStatus) => {
-    const steps = [
-      { key: 'pending', label: 'En attente de validation' },
-      { key: 'awaiting_payment', label: 'Acceptée – En attente de paiement' },
-      { key: 'paid', label: 'Payée' },
-      { key: 'in_progress', label: 'En cours de préparation' },
-      { key: 'shipped', label: 'Expédiée' },
-      { key: 'delivered', label: 'Livrée' }
-    ];
-
-    return (
-      <div className="order-status-flow" aria-hidden>
-        {steps.map((s, idx) => {
-          const active = s.key === currentStatus;
-          return (
-            <React.Fragment key={s.key}>
-              <div className={`status-step ${active ? 'active' : ''}`}>{s.label}</div>
-              {idx < steps.length - 1 && <div className="status-arrow">↓</div>}
-            </React.Fragment>
-          );
-        })}
-      </div>
-    );
-  };
+  // Note: status flow renderer removed because it wasn't used; keep order status badges via `getStatusBadge`.
 
   const handleCancel = async (orderId) => {
     if (!window.confirm('Voulez-vous vraiment annuler cette commande ?')) return;

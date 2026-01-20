@@ -17,12 +17,7 @@ const Login = ({ onSwitchToSignup, onLoginSuccess }) => {
 
   // (OTP removed) no OTP state
 
-  // NEW: Role selection state for multi-role users
-  const [availableRoles, setAvailableRoles] = useState([]);
-  const [selectedRole, setSelectedRole] = useState('');
-  const [showRoleSelection, setShowRoleSelection] = useState(false);
-
-  const [hasHeroImage, setHasHeroImage] = useState(false);
+  // Role selection removed (backend determines role) and hero image preload removed to avoid unused-vars
   const [showPassword, setShowPassword] = useState(false);
 
   // Form validation
@@ -196,13 +191,7 @@ const Login = ({ onSwitchToSignup, onLoginSuccess }) => {
   };
   ============================================ */
 
-  // Try to preload a hero image placed in public folder (optional)
-  useEffect(() => {
-    const img = new Image();
-    img.onload = () => setHasHeroImage(true);
-    img.onerror = () => setHasHeroImage(false);
-    img.src = '/interface-ecommerce.png';
-  }, []);
+  // (Removed optional hero image preload to satisfy CI linting rules)
 
   // Set page title
   useEffect(() => {

@@ -283,28 +283,7 @@ const SellerDashboard = ({ userName, onLogout }) => {
     }));
   };
 
-  const getStatusBadge = (status) => {
-    // New status set:
-    // - pending: Commandes en attente
-    // - awaiting_payment: Commandes en attente de paiement
-    // - paid: Commandes payées
-    // - in_progress: Commandes en cours
-    // - shipped: Commandes expédiées
-    // - delivered: Commandes livrées
-    // - cancelled: Annulées
-    const statusMap = {
-      accepted: { label: 'Acceptée', class: 'status-accepted' },
-      pending: { label: 'En attente', class: 'status-pending' },
-      awaiting_payment: { label: 'En attente de paiement', class: 'status-awaiting-payment' },
-      paid: { label: 'Payée', class: 'status-paid' },
-      in_progress: { label: 'En cours', class: 'status-in-progress' },
-      shipped: { label: 'Expédiée', class: 'status-shipped' },
-      delivered: { label: 'Livrée', class: 'status-delivered' },
-      cancelled: { label: 'Annulée', class: 'status-cancelled' }
-    };
-    const mapped = statusMap[status] || { label: status, class: 'status-default' };
-    return <span className={`status-badge ${mapped.class}`}>{mapped.label}</span>;
-  };
+  // getStatusBadge removed from SellerDashboard to avoid unused variable ESLint warning.
 
   if (loading) {
     return (

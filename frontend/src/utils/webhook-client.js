@@ -183,9 +183,11 @@ export const isWebhookConnected = () => {
   return eventSource !== null && eventSource.readyState === EventSource.OPEN;
 };
 
-export default {
+const webhookClient = {
   connect: connectWebhook,
   disconnect: disconnectWebhook,
   on: onWebhookEvent,
   isConnected: isWebhookConnected
 };
+
+export default webhookClient;
