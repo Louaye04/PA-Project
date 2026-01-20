@@ -5,10 +5,12 @@
     { "src": "frontend/package.json", "use": "@vercel/static-build" }
   ],
   "env": {
-    "REACT_APP_API_URL": "https://pa-project-992n.vercel.app/api"
+    "REACT_APP_API_URL": "/api"
   },
   "routes": [
     { "src": "^/api/(.*)", "dest": "/api/$1.js" },
-    { "src": "^/(.*)$", "dest": "/frontend/build/$1" }
+    { "handle": "filesystem" },
+    { "src": "^/service-worker.js$", "dest": "/frontend/build/service-worker.js" },
+    { "src": "^/(.*)$", "dest": "/frontend/build/index.html" }
   ]
 }
